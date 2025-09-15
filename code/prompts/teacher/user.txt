@@ -1,0 +1,28 @@
+Follow the required format exactly.
+
+Example 1
+Question: A farm has 3 barns with 12 cows each. It sells 7 cows and buys 5 more. How many cows now?
+Reasoning:
+- Initially: 3×12 = 36
+- After selling: 36 − 7 = 29
+- After buying: 29 + 5 = 34
+Final Answer: 34
+
+Example 2
+Question: Pens cost $2 and notebooks $5. Alex buys 3 pens and 2 notebooks and pays with $20. How much change?
+Reasoning:
+- Pens: 3×2 = 6
+- Notebooks: 2×5 = 10
+- Total: 6 + 10 = 16
+- Change: 20 − 16 = 4
+Final Answer: 4
+
+Example 3
+Question: A tank holds 250 liters. 35% is drained, then 40 liters are added. How many liters now?
+Reasoning:
+- Drained: 35% of 250 = 0.35×250 = 87.5
+- Remaining: 250 − 87.5 = 162.5
+- After adding: 162.5 + 40 = 202.5
+Final Answer: 202.5
+
+Question: {question}

@@ -1,0 +1,23 @@
+from pathlib import Path
+
+RANDOM_STATE = 42
+
+GSM8K_PATH = "openai/gsm8k"
+
+ROOT_DIR = Path(__file__).parents[1]
+
+SRC_PATH = ROOT_DIR / "src"
+
+LOGS_DIR = ROOT_DIR / "logs"
+
+DATA_DIR = ROOT_DIR / "data"
+TEACHER_COTS_FILE = DATA_DIR / "teacher_cots.jsonl"
+
+PROMPTS_DIR = ROOT_DIR / "prompts"
+
+TEACHER_PROMPT_PATH = PROMPTS_DIR / "teacher"
+TEACHER_SYSTEM_PROMPT_PATH = TEACHER_PROMPT_PATH / "system.txt"
+TEACHER_USER_PROMPT_PATH = TEACHER_PROMPT_PATH / "user.txt"
+
+TEACHER_USER_PROMPT = TEACHER_USER_PROMPT_PATH.read_text()
+TEACHER_SYSTEM_PROMPT = TEACHER_SYSTEM_PROMPT_PATH.read_text()
