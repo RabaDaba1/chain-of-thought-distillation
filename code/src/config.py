@@ -10,8 +10,13 @@ SRC_PATH = ROOT_DIR / "src"
 
 LOGS_DIR = ROOT_DIR / "logs"
 
-DATA_DIR = ROOT_DIR / "data"
-TEACHER_COTS_FILE = DATA_DIR / "teacher_cots.jsonl"
+ARTIFACTS_DIR = ROOT_DIR / "artifacts"
+
+DATA_DIR = ARTIFACTS_DIR / "data"
+RAW_DATA_DIR = DATA_DIR / "raw"
+PROCESSED_DATA_DIR = DATA_DIR / "processed"
+
+MODELS_DIR = ARTIFACTS_DIR / "models"
 
 PROMPTS_DIR = ROOT_DIR / "prompts"
 
