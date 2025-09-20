@@ -1,6 +1,6 @@
 import logging
 
-from .config import LOGS_DIR
+from src.config import LOGS_DIR
 
 
 def get_logger(name: str) -> logging.Logger:
