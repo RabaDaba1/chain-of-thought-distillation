@@ -14,6 +14,7 @@ ARTIFACTS_DIR = ROOT_DIR / "artifacts"
 
 DATA_DIR = ARTIFACTS_DIR / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
+CLEANED_DATA_DIR = DATA_DIR / "cleaned"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 
 MODELS_DIR = ARTIFACTS_DIR / "models"
