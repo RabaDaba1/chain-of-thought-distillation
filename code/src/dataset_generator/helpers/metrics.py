@@ -16,8 +16,11 @@ def _fmt_int(n: int) -> str:
     return str(n)
 
 
-def live_progress(settings: GenerationSettings) -> Callable[[None], None]:
-    pbar = tqdm.tqdm(desc="Generating samples", unit="sample")
+def live_progress(
+    settings: GenerationSettings, *, total: int | None = None
+) -> Callable[[None], None]:
+    # Initialize a persistent progress bar with a fixed total if provided
+    pbar = tqdm.tqdm(desc="Generating samples", unit="sample", total=total)
 
     def update() -> None:
         stats = settings.stats
@@ -29,7 +32,7 @@ def live_progress(settings: GenerationSettings) -> Callable[[None], None]:
             if stats.total_samples
             else 0.0
         )
-        pbar.total = stats.total_samples
+        # Advance progress to the current total samples; do not change the total each time
         pbar.n = stats.total_samples
         pbar.set_postfix(
             {

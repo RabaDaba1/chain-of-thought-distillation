@@ -6,45 +6,45 @@ from typing import Callable
 
 from datasets import load_dataset
 
-from dataset_generator.helpers.answers import (
-    parse_gold_answer_number,
-    parse_teacher_final_answer,
-)
-from dataset_generator.helpers.metrics import final_summary, live_progress
-from dataset_generator.lib.teacher_client import TeacherClient
 from src.config import (
     GSM8K_PATH,
     TEACHER_SYSTEM_PROMPT,
     TEACHER_USER_PROMPT,
 )
+from src.dataset_generator.helpers.answers import (
+    parse_gold_answer_number,
+    parse_teacher_final_answer,
+)
+from src.dataset_generator.helpers.metrics import final_summary, live_progress
 from src.dataset_generator.io.jsonl import append_jsonl, read_jsonl
 from src.dataset_generator.io.meta import write_meta
+from src.dataset_generator.lib.teacher_client import TeacherClient
 from src.dataset_generator.models import GenerationSettings, Question, SampleRecord
 from src.logs import get_logger
 
 logger = get_logger("dataset_generator")
 
+question_plan = list[
+    tuple[int, dict, set[int]]
+]  # question index, row, existing sample ids
+
 
 def _existing_index(
     settings: GenerationSettings,
-) -> tuple[dict[int, set[int]], dict[int, int]]:
+) -> dict[int, set[int]]:
     existing_ids: dict[int, set[int]] = defaultdict(set)
-    counts: dict[int, int] = defaultdict(int)
     for rec in read_jsonl(settings.output_file):
-        qid = int(rec["question_id"])
-        sid = int(rec["sample_id"])
-        existing_ids[qid].add(sid)
-        counts[qid] += 1
-    return existing_ids, counts
+        existing_ids[int(rec["question_id"])].add(int(rec["sample_id"]))
+    return existing_ids
 
 
-def _plan_questions(raw_dataset, settings: GenerationSettings):
+def _plan_questions(raw_dataset, settings: GenerationSettings) -> question_plan:
     n = len(raw_dataset)
     limit = n if settings.num_questions == -1 else min(settings.num_questions, n)
-    existing_ids, counts = _existing_index(settings)
-    plan = []
+    existing_ids = _existing_index(settings)
+    plan: question_plan = []
     for i in range(limit):
-        if counts.get(i, 0) < settings.samples_per_question:
+        if len(existing_ids.get(i, set())) < settings.samples_per_question:
             plan.append((i, raw_dataset[i], existing_ids.get(i, set())))
     return plan
 
@@ -57,6 +57,13 @@ def _to_question(idx: int, row: dict) -> Question:
         gold_answer_text=gold_text,
         gold_answer_number=parse_gold_answer_number(gold_text),
     )
+
+
+def _total_missing_samples(plan: question_plan, settings: GenerationSettings):
+    total_missing_samples = 0
+    for _, __, existing_ids in plan:
+        total_missing_samples += settings.samples_per_question - len(existing_ids)
+    return total_missing_samples
 
 
 async def _produce_sample(
@@ -149,7 +156,8 @@ async def run_generation(settings: GenerationSettings) -> None:
 
     sem = asyncio.Semaphore(settings.max_concurrency)
     lock = asyncio.Lock()
-    update = live_progress(settings)
+
+    update = live_progress(settings, total=_total_missing_samples(plan, settings))
 
     async with client._client:
         tasks: list[asyncio.Task] = []

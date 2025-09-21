@@ -4,9 +4,9 @@
   "user_prompt_template": "Follow the required format exactly.\n\nExample 1\nQuestion: A farm has 3 barns with 12 cows each. It sells 7 cows and buys 5 more. How many cows now?\nReasoning:\n- Initially: 3\u00d712 = 36\n- After selling: 36 \u2212 7 = 29\n- After buying: 29 + 5 = 34\nFinal Answer: 34\n\nExample 2\nQuestion: Pens cost $2 and notebooks $5. Alex buys 3 pens and 2 notebooks and pays with $20. How much change?\nReasoning:\n- Pens: 3\u00d72 = 6\n- Notebooks: 2\u00d75 = 10\n- Total: 6 + 10 = 16\n- Change: 20 \u2212 16 = 4\nFinal Answer: 4\n\nExample 3\nQuestion: A tank holds 250 liters. 35% is drained, then 40 liters are added. How many liters now?\nReasoning:\n- Drained: 35% of 250 = 0.35\u00d7250 = 87.5\n- Remaining: 250 \u2212 87.5 = 162.5\n- After adding: 162.5 + 40 = 202.5\nFinal Answer: 202.5\n\nQuestion: {question}",
   "temperature": 1.0,
   "top_p": 1.0,
-  "num_questions": 1000,
+  "num_questions": 1,
   "samples_per_question": 30,
   "max_concurrency": 25,
   "request_timeout": 120,
-  "timestamp": 1758389424.9518883
+  "timestamp": 1758451447.0059447
 }

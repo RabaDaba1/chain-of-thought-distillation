@@ -2,6 +2,11 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import sys
+
+from anyio import Path
+
+sys.path.append(str(Path(__file__).parents[2]))
 
 from src.config import RAW_DATA_DIR
 from src.dataset_generator.generator import run_generation

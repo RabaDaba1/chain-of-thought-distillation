@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -60,17 +60,17 @@ class Question(BaseModel):
     question_id: int
     question: str
     gold_answer_text: str
-    gold_answer_number: Optional[float | int]
+    gold_answer_number: float | int | None
 
 
 class TeacherResponse(BaseModel):
     answer: str
-    parsed_number: Optional[float | int]
-    finish_reason: Optional[str] = None
-    usage: Optional[dict[str, Any]] = None
+    parsed_number: float | int | None = None
+    finish_reason: str | None = None
+    usage: dict[str, Any] | None = None
     latency_ms: int
-    model: Optional[str] = None
-    request_id: Optional[str] = None
+    model: str | None = None
+    request_id: str | None = None
 
 
 class SampleRecord(BaseModel):
@@ -78,15 +78,15 @@ class SampleRecord(BaseModel):
     question_id: int
     question: str
     gold_answer_text: str
-    gold_answer_number: Optional[float | int]
+    gold_answer_number: float | int | None
 
     sample_id: int
     teacher_answer_text: str
-    teacher_answer_number: Optional[float | int]
+    teacher_answer_number: float | int | None
     is_correct: bool
 
-    finish_reason: Optional[str] = None
-    usage: Optional[dict[str, Any]] = None
+    finish_reason: str | None = None
+    usage: dict[str, Any] | None = None
     latency_ms: int
-    model: Optional[str] = None
-    request_id: Optional[str] = None
+    model: str | None = None
+    request_id: str | None = None

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-RANDOM_STATE = 42
+SEED = 42
 
 GSM8K_PATH = "openai/gsm8k"
 
