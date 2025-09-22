@@ -1,0 +1,9 @@
+Monitoring on tensorboard:
+
+on the pod:
+expose 6006
+uv run tensorboard --port 6006 --logdir qwen2.5_3b_labelonly_lora/
+
+on local:
+ssh -N -L 6006:127.0.0.1:6006 -p 47046 root@80.15.7.37 -i ~/.ssh/id_ed25519
+
