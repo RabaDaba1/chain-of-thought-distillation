@@ -3,3 +3,5 @@
 __pycache__/
 logs/
 qwen2.5_3b_sctod_lora/
+
+models/
