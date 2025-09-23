@@ -1,3 +1,5 @@
+'/workspace/chain-of-thought-distillation/code/artifacts/models/qwen2.5_3b_sctod_lora/checkpoint-2000'
+
 Monitoring on tensorboard:
 
 on the pod:
