@@ -1,0 +1,15 @@
+Follow the required format exactly.
+
+Example 1:
+Question: A farm has 3 barns with 12 cows each. It sells 7 cows and buys 5 more. How many cows now?
+Final Answer: 34
+
+Example 2:
+Question: Pens cost $2 and notebooks $5. Alex buys 3 pens and 2 notebooks and pays with $20. How much change?
+Final Answer: 4
+
+Example 3:
+Question: A tank holds 250 liters. 35% is drained, then 40 liters are added. How many liters now?
+Final Answer: 202.5
+
+Question: {question}
