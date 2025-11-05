@@ -13,42 +13,39 @@
 \shorttitleEN{CoT Distillation for Small LMs}
 
 
-% Dopuszczalne wartości[1,2]:
-% * "Projekt dyplomowy" - na koniec studiów I stopnia
-% * "Praca dyplomowa" - na koniec studiów II stopnia
-% [1] Zasady dyplomowania w roku akademickim 2020/2021 (Decyzja Dziekana WEAIiIB nr 16/2020 z dnia 9 grudnia 2020 roku)
-% [2] Załącznik nr 1a) do Decyzji nr 16/2020 Dziekana Wydziału EAIiIB z dnia 09 grudnia 2020 r.
-% \thesistype{Praca dyplomowa}
 \thesistype{Engineering Thesis}
 \supervisor{Dr. Krzysztof Kluza}
 
-%\department{Katedra Informatyki Stosowanej}
-% \department{Department of Applied Computer Science}
+\department{Department of Applied Computer Science}
 
-% \faculty{Wydział Elektrotechniki, Automatyki, Informatyki i Inżynierii Biomedycznej}
-\faculty{WYDZIAŁ ELEKTROTECHNIKI, AUTOMATYKI, INFORMATYKI I INŻYNIERII BIOMEDYCZNEJ}
+\faculty{Faculty of Electrical Engineering, Automatics, Computer Science and Biomedical Engineering}
 
-% \degreeprogramme{Informatyka i Systemy Inteligentne}
-\degreeprogramme{Informatyka i Systemy Inteligentne}
+\degreeprogramme{Computer science and intelligent systems}
 
 \date{\the\year{}}
 
 \acknowledgements{Put your acknowledgements here }
 
-
 \begin{document}
-
 	\titlepages
 	\RedefinePlainStyle
-		
+
+	
+    \begin{abstract}
+    This thesis investigates whether supervised chain-of-thought distillation (SCoTD) can measurably improve the reasoning accuracy of a small language model on math word problems. A strong teacher model generates structured reasoning traces (CoT) for GSM8K, which are cleaned and deduplicated, and then used to finetune a 3B-class student via parameter-efficient adapters (LoRA) under 4-bit quantization. The training stack relies on modern open tooling for reproducibility and efficient use of a single 24GB GPU. Evaluation uses strict numeric exact-match parsing on GSM8K.
+
+    Results show that SCoTD improves the student over a non-finetuned base with CoT prompting (78.54\% vs 70.51\%). A label-only variant also improves over its baseline (15.01\% vs 10.99\%), though strict formatting requirements likely undercount true ability. The teacher reaches 93.61\% on the GSM8K test split. Contributions include a cost-aware CoT data generation pipeline, a reproducible finetuning setup (LoRA + 4-bit nf4 + bf16), and an empirical analysis of accuracy, training dynamics, and operational costs. These findings support SCoTD as a practical method to enhance small models' reasoning under resource constraints.
+    \end{abstract}
+
+    \noindent\textbf{Keywords:} chain-of-thought, distillation, LoRA, QLoRA, GSM8K, small language models, reasoning, quantization
+
 	\setcounter{tocdepth}{2}
 	\tableofcontents
 	\clearpage
-	
+
 	% \include{filename}
 	\include{chapters/01-introduction}
-	\include{chapters/02-theoretical-background}
-	
+	\include{chapters/02-background}
 	% itd.
 	% \appendix
 	% \include{dodatekA}
