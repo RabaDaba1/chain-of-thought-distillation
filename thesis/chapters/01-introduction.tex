@@ -27,10 +27,10 @@ The study focuses on a single small decoder-only model (Qwen2.5-3B) \cite{qwen20
 \section*{Method overview}
 The pipeline comprises teacher CoT generation, cleaning and deduplication, dataset processing, student finetuning (SCoTD and label-only variants), and evaluation. The student relies on PEFT with LoRA adapters \cite{hu2021loralowrankadaptationlarge} over a quantized backbone \cite{dettmers2023qloraefficientfinetuningquantized}. Tokenization is handled with a fast subword tokenizer \cite{kudo2018sentencepiecesimplelanguageindependent,sennrich2016neuralmachinetranslationrare}. Inference uses greedy decoding and a strict numeric exact-match metric. The software stack builds on Transformers and related tooling \cite{wolf2020huggingfacestransformersstateoftheartnatural}. The teacher is a strong reasoning model (DeepSeek-R1 Distill \cite{deepseekai2025deepseekr1incentivizingreasoningcapability}) accessed via OpenRouter \cite{openrouter}. Figure~\ref{fig:pipeline-overview} summarizes the end-to-end pipeline and artifact flow.
 
-\begin{figure}[t]
+\begin{figure}[!h]
     \centering
-    \includegraphics[width=\linewidth]{figures/pipeline-overview.pdf}
-    \caption{End-to-end SCoTD pipeline: (1) prompt strong teacher to produce CoT + answer; (2) clean/deduplicate/filter; (3) tokenize and build training splits; (4) fine-tune student with LoRA on 4-bit base (QLoRA); (5) evaluate with greedy decoding and strict numeric exact match.}
+    \includegraphics[width=\linewidth]{img/pipeline.png}
+    \caption{End-to-end SCoTD pipeline.}
     \label{fig:pipeline-overview}
 \end{figure}
 
@@ -38,7 +38,4 @@ The pipeline comprises teacher CoT generation, cleaning and deduplication, datas
 SCoTD yields a clear gain over the base model under CoT prompting (78.54\% vs 70.51\%). Label-only finetuning improves over its baseline (15.01\% vs 10.99\%), though strict formatting likely undercounts correct numeric computations. The teacher achieves 93.61\% on GSM8K test, providing headroom and confirming the value of distilling high-quality reasoning traces.
 
 \section*{Author background and motivation}
-The author works as a Machine Learning Integration Engineer at OneRail, building LLM-powered support workflows for same-day logistics. Observed gains in agent productivity from LLM assistance motivated evaluating SCoTD as a low-cost way to increase reasoning accuracy under practical constraints (latency, cost, and single-GPU hardware).
-
-\section*{Thesis outline}
-Chapter~2 summarizes background on CoT, distillation, PEFT/QLoRA, tokenization, prompting, and GSM8K. Chapter~3 reviews related work on CoT prompting and small-model enhancement. Chapter~4 details the methodology and training setups. Chapter~5 describes the experimental setup. Chapter~6 presents results and analyses. Chapter~7 discusses implications and limitations. Chapter~8 concludes with practical guidance. Chapters~9--11 cover ethics, licensing, and reproducibility, with appendices for supplementary materials.
+The author is a Co-Founder at an AI phishing detection startup that uses LLMs to analyze URLs and webpage content for malicious indicators, and a Machine Learning Engineer at OneRail building LLM-powered support workflows for same-day logistics. These roles highlighted the need for reliable, cost-efficient reasoning under tight latency and single-GPU constraints, motivating SCoTD as a practical path to higher accuracy.

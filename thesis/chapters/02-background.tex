@@ -29,7 +29,7 @@ Computationally, attention has $O(L^2 d)$ time and $O(L^2)$ memory in sequence l
 \begin{figure}[!h]
     \centering
     \includegraphics[width=\linewidth]{img/transformer.png}
-    \caption{Transformer encoder-decoder block}
+    \caption{Transformer encoder-decoder block \cite{vaswani2023attentionneed}.}
     \label{fig:transformer-block}
 \end{figure}
 
@@ -49,7 +49,7 @@ Despite costs, scaling yields emergent capabilities such as in-context learning 
 \begin{figure}[!h]
     \centering
     \includegraphics[width=\linewidth]{img/scaling_laws.png}
-    \caption{Scaling laws: test loss vs. effective compute/model size/data on logarithmic axes.}
+    \caption{Scaling laws: test loss vs. effective compute/model size/data on logarithmic axes \cite{kaplan2020scalinglawsneurallanguage}.}
     \label{fig:scaling-laws}
 \end{figure}
 
@@ -132,11 +132,11 @@ This approach enables fine-tuning larger backbones under tight memory budgets an
 \begin{figure}[!h]
     \centering
     \includegraphics[width=\linewidth]{img/qlora.png}
-    \caption{Model parameters under QLoRA NF4 + LoRA: frozen backbone in 4-bit quantization with per-channel scales; trainable LoRA parameters in higher precision; forward/backward compute in bf16.}
+    \caption{Model parameters under QLoRA NF4 + LoRA: frozen backbone in 4-bit quantization with per-channel scales; trainable LoRA parameters in higher precision. Forward/backward compute in bf16 \cite{nvidia2024qlora}.}
     \label{fig:qlora}
 \end{figure}
 
-\section{Tokenization}
+\section{Tokenizers}
 Tokenization converts raw text into a sequence of discrete token IDs drawn from a fixed vocabulary. Language models as one of the first forward pass steps consume sequence of token IDs as input and map them to their embeddings vectors. A good scheme balances coverage (few unknowns), compact sequences (shorter length for a given text), and stability of encoding/decoding.
 
 \subsection{Subword methods}
@@ -151,10 +151,10 @@ Common approaches:
 
 Implementation frameworks such as SentencePiece and Transformers provide standardized training, encoding, and decoding pipelines \cite{kudo2018sentencepiecesimplelanguageindependent,wolf2020huggingfacestransformersstateoftheartnatural}. Variants like byte-level BPE ensure coverage of arbitrary Unicode by operating on UTF-8 bytes, which removes true OOVs at the cost of sometimes longer sequences for non-Latin scripts.
 
-\begin{figure}[t]
+\begin{figure}[!h]
     \centering
-    \includegraphics[width=\linewidth]{figures/tokenization-examples.pdf}
-    \caption{Tokenization }
+    \includegraphics[width=\linewidth]{img/tokenization.png}
+    \caption{Tokenization example for OpenAI GPT-4o Tokenizer.}
     \label{fig:tokenization-examples}
 \end{figure}
 
@@ -171,25 +171,23 @@ Special tokens mark structure and control decoding:
     \item \textbf{PAD}: Padding aligns sequences within a batch to a common length; attention masks ensure pads are ignored during loss computation and attention.
     \item \textbf{Instruction tokens}: Special markers that indicate task boundaries or specify desired behavior (e.g., \texttt{<|user|>}, \texttt{<|assistant|>}, \texttt{<|thought|>}).
 \end{itemize}
-Figure~\ref{fig:sequence-framing} shows the instruction/assistant turn framing and BOS/EOS/PAD usage.
 
-\begin{figure}[t]
+\begin{figure}[!h]
     \centering
-    \includegraphics[width=\linewidth]{figures/sequence-framing.pdf}
-    \caption{Sequence framing with special tokens: example instruction–response turns using BOS/EOS and task-specific role tokens (e.g., <|user|>, <|assistant|>).}
+    \includegraphics[width=\linewidth]{img/prompt.png}
+    \caption{Example of conversation-formatted instruction-response prompt.}
     \label{fig:sequence-framing}
 \end{figure}
 
 \section{GSM8K}
 GSM8K is a benchmark of 8.5K English grade-school math word problems designed to evaluate multi-step reasoning in natural language \cite{cobbe2021trainingverifierssolvemath}. Problems typically require 2-8 steps of elementary arithmetic ($+,-,\times,\div$) and include human-written, natural-language solutions with inline ``calculator annotations'' (intermediate computations) and a final integer answer on a separate line. The benchmark is widely used to study prompting and reasoning supervision; standard scoring is exact numeric match, often evaluated under chain-of-thought prompting and self-consistency sampling \cite{wei2023chainofthoughtpromptingelicitsreasoning,wang2023selfconsistencyimproveschainthought}.
 
-\subsection{Dataset overview and structure}
+\subsection{Dataset structure}
 Released in English via HuggingFace Datasets \cite{lhoest2021datasetscommunitylibrarynatural}, GSM8K provides two configurations: a main set (question, rationale, final answer) and a socratic variant that interleaves sub-questions within the solution. Official splits comprise 7{,}473 training and 1{,}319 test problems \cite{cobbe2021trainingverifierssolvemath}; each instance pairs a question string with a multi-step natural-language solution containing intermediate calculations and a single integer final answer.
-Figure~\ref{fig:gsm8k-example} shows an example question, rationale with inline calculations, and final integer answer line.
 
-\begin{figure}[t]
+\begin{figure}[!h]
     \centering
-    \includegraphics[width=\linewidth]{figures/gsm8k-example.pdf}
-    \caption{GSM8K example: (left) problem statement; (right) step-by-step rationale with calculator-style intermediate computations, followed by a final integer answer on its own line.}
+    \includegraphics[width=\linewidth]{img/gsm8k.png}
+    \caption{GSM8K example: question, rationale with intermediate steps, and final answer.}
     \label{fig:gsm8k-example}
 \end{figure}
