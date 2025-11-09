@@ -85,7 +85,7 @@ Response-based KD is the most widely used approach. In this setting, the student
 \end{equation}
 where $y$ are hard labels and $\alpha \in [0,1]$ balances terms; the $T^2$ factor compensates for gradient scaling \cite{hinton2015distilling}.
 
-Beyond responses, feature-based KD aligns intermediate representations (e.g., hint layers in FitNets \cite{romero2015fitnets} or attention maps in Attention Transfer \cite{zagoruyko2017paying}), while relation-based KD matches instance relations (e.g., pairwise similarities). Self-distillation trains a student from its own or a previous generation's predictions (Born-Again Networks \cite{furlanello2018bornagain}); data-augmented KD uses pseudo-labels on unlabeled data (Noisy Student \cite{xie2020noisystudent}). See \cite{gou2021survey} for a survey.
+Beyond responses, feature-based KD aligns intermediate representations, while relation-based KD matches instance relations. Self-distillation trains a student from its own or a previous generation's predictions (Born-Again Networks \cite{furlanello2018bornagain}); data-augmented KD uses pseudo-labels on unlabeled data (Noisy Student \cite{xie2020noisystudent}). See \cite{gou2021survey} for a survey.
 
 \subsection{Distillation for sequence models and LLMs}
 In language modeling, KD is applied at either:

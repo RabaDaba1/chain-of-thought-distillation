@@ -21,13 +21,12 @@ This document is the working outline and content scaffold for the engineering th
 - Naturalness: write like a human; allow moderate variance in sentence and word length; mix simple and compound sentences; avoid repetitive phrasing; keep tone neutral and clear.
 - Voice: prefer active voice when it improves clarity; passive is acceptable in methods/results.
 
-## Table of Contents (with recommended page allocation for a 30–40 page thesis)
+## Table of Contents (30–40 page thesis)
 
 - Front matter (not counted)
 - Abstract (0.5 page)
 
 1. Introduction (3–4 pages)
-- Problem, RQs, scope, contributions, motivation
 
 2. Background (5–6 pages)
 
@@ -43,14 +42,7 @@ This document is the working outline and content scaffold for the engineering th
 
 9. Ethics, safety, and licensing (0.5–1 page)
 
-10. Reproducibility statement (0.5–1 page)
-
 References (1–2 pages; often excluded from page limit)
-
-Appendices (unlimited; excluded)
-- 9. Supplements and confirmed details (map subsections 9.1–9.4 here)
-- Additional figures/tables, config exports, repository map, primers
-
 
 ## Abstract
 
@@ -58,81 +50,7 @@ Appendices (unlimited; excluded)
 
 ## 2. Background
 
-  - How meaning emerges through context: tokens are mapped to embeddings (average representations from pretraining). As they pass through transformer blocks, self-attention mixes information across positions so embeddings are “saturated” with sentence context. For example, in “Apple phones are good,” the token “Apple” absorbs signal from “phones,” biasing the representation toward the company sense rather than the fruit. After all blocks, the contextualized states drive the next-token prediction.
-
 ## 4. Methodology
-
-### 4.1 Problem analysis and system requirements
-- Functional goal: improve GSM8K reasoning accuracy of a <4B student via SCoTD; maintain strict output format.
-- Constraints: single 24 GB GPU, API-based teacher generation, limited budget; reproducible runs (seed=42).
-- Non-functional: training stability, VRAM headroom, data hygiene, cost tracking.
-
-### 4.2 Proposed architecture and data flow
-- Components: teacher generator (API) → cleaner → processed dataset → trainer (QLoRA) → evaluator.
-- Diagrams: [TO FILL] UML component diagram; system/data-flow diagram for generation→training→eval; training loop schematic.
-- Pipeline: Teacher CoT generation → cleaning → processed dataset → SCoTD/label‑only finetuning → evaluation.
-
-### 4.3 Chosen technologies and rationale
-- Models: Teacher DeepSeek R1 Distill; Student Qwen2.5‑3B.
-- Finetuning: PEFT/LoRA over q/k/v/o + MLP; QLoRA 4‑bit nf4; bf16 compute; gradient checkpointing.
-- Runtime: bitsandbytes paged_adamw_8bit; async Python generator via OpenRouter; strict parser for EM.
-
-### 4.4 Teacher CoT dataset generation
-
-- Provider: OpenRouter API (Python async generator with concurrency control; tuned from 100 to 25 to reduce errors/timeouts).
-- Teacher model and decoding in `models.py`.
-- Prompts: Stored under `prompts/cot/` and `prompts/label_only/`; loaded via `src/config.py`.
-- Sampling scale: 30k raw samples generated (30 per question for the first 1k GSM8K train questions).
-- Logged metadata per sample: token usage (prompt/completion/total), latency, finish_reason, request_id, correctness.
-
-### 4.5 Cleaning and preprocessing
-
-- Cleaning (see `notebooks/clean_dataset.ipynb`):
-  - Keep only correct samples (where teacher numeric answer equals gold numeric answer).
-  - Deduplicate by exact `teacher_answer_text`.
-  - Remove extreme outliers by total tokens (exclude top 1%).
-  - Resulting size: ~25k cleaned samples.
-- Processing (see `notebooks/process_dataset.ipynb`): select columns
-  - `{question, gold_answer_text, gold_answer_number, teacher_answer_text, teacher_answer_number}`
-  - Save JSONL to `artifacts/data/processed/dataset.jsonl`.
-
-### 4.6 Training setups
-
-Common:
-- Base model: `Qwen/Qwen2.5-3B` (decoder-only causal LM).
-- Tokenizer: fast tokenizer; pad token set to EOS when missing; max seq length 2048; truncation policy keeps full answer and trims prompt from left if needed.
-- Quantization: BitsAndBytes 4-bit (nf4), double quantization; bf16 compute.
-- Gradient checkpointing enabled; use_cache=False during training.
-- Optimizer: paged_adamw_8bit; seeds set to 42.
-- Data split: by `question_id`, TRAIN_SPLIT=0.8; dedupe-by-question for label-only mode to avoid multiple labels per question.
-
-SCoTD (train on teacher CoTs):
-- LoRA: r=16, alpha=32, dropout=0.05; target modules: q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj.
-- Training args (example from notebook): epochs=10, lr=2e-5, per_device_batch=8, grad_accum=2, warmup_ratio=0.03, save/eval every 200 steps, bf16 enabled.
-
-Label-only (train to emit only the final numeric answer string):
-- Same LoRA config.
-- Training args (example from notebook): epochs=20, lr=1e-5, per_device_batch=16, grad_accum=1, warmup_ratio=0.1, weight_decay=0.1, max_grad_norm=1.0, save/eval every 50 steps.
-
-### 4.7 Inference and evaluation
-
-- Inference prompts: build from the same system/user templates as training; label-only vs CoT modes.
-- Decoding: greedy (do_sample=False), max_new_tokens=1024.
-- Accuracy metric: numeric exact-match using parser expecting a line like “Final Answer: <number>”. If the format deviates, it is counted as incorrect.
-- Teacher evaluation: same generator config; test-set answers collected for accuracy and cost tracking.
-
-
-## 5. Experimental setup
-
-- Hardware: RunPod RTX 4090 (24GB VRAM), 64GB RAM; price $0.34/hr.
-- Software:
-  - Python 3.11, uv as package manager.
-  - Core libraries: PyTorch, Transformers, PEFT, bitsandbytes, datasets, accelerate, tensorboard, pandas, seaborn, matplotlib. See `pyproject.toml`.
-  - Environment variables: `TOKENIZERS_PARALLELISM=false`; seeds set to 42.
-  - CUDA/Torch versions: CUDA 12.9, torch 2.8.0
-- Data protocol:
-  - Teacher CoTs generated for the first ~1,000 training questions of GSM8K.
-  - Train/eval split by `question_id` (80/20) for student training.
 
 ## 6. Results
 
@@ -141,8 +59,14 @@ Label-only (train to emit only the final numeric answer string):
 - Base (CoT prompting): 70.51%
 - Base (label-only prompting): 10.99%
 - Student SCoTD best checkpoint: 78.54% (checkpoint 8)
-- Student label-only best checkpoint: 15.01% (checkpoint 4/6/8 similar)
+- Student label-only best checkpoint: 15.01% (checkpoint 4)
 - Teacher: 93.61% (API; cost ~$0.282 for test-set predictions)
+
+student_label_only_checkpoint_200: 15.01%
+student_sctod_checkpoint_1400: 78.54%
+base_cot_prompting: 70.51%
+base_label_only: 10.99%
+
 
 ### 6.2 Training dynamics
 
@@ -207,7 +131,7 @@ Note: Paths may vary; adapt the working directory if cloning elsewhere.
 - Model: `deepseek/deepseek-r1-distill-qwen-32b`
 - System prompt and user-template: see `artifacts/data/raw/dataset_meta.json` and `.../teacher_gsm8k_test_meta.json` (strict format with “Reasoning:” bullet steps and final line `Final Answer: <number>`).
 - Decoding and runtime params: `temperature=1.0`, `top_p=1.0`, `max_concurrency=25`, `request_timeout=120`. [Greedy decoding for student/base tests; teacher generation followed the meta config.]
-- Scope: First 1,000 questions from GSM8K train set; ~30 samples per question targeted; ~30k raw generations.
+- Scope: First 1,000 questions from GSM8K train set; ~30 samples per question targeted; 30k raw generations.
 
 ### 9.3 Dataset analysis snapshots (train-generation set)
 
@@ -230,37 +154,55 @@ Note: Paths may vary; adapt the working directory if cloning elsewhere.
 
 ## References
 
-Maintain the bibliography in `BIBLIOGRAPHY.bib` and cite the following canonical works (keys shown):
+Maintain the bibliography in `bibliografia.bib`. Cite using the following keys (complete set from the current .bib):
 
-- Chain-of-Thought prompting: `wei2022chainofthought`
-- Self-consistency for CoT: `wang2022selfconsistency`
-- LoRA: `hu2021lora`
-- QLoRA and 4-bit quantization: `dettmers2023qlora`
-- GSM8K dataset: `cobbe2021gsm8k`
-- Transformers library: `wolf2020transformers`
-- Tokenization (SentencePiece/BPE): `kudo2018sentencepiece`, `sennrich2016bpe`
-- bitsandbytes: `bitsandbytes`
-- PEFT: `peft`
-- Teacher model card/report (placeholder): `deepseekr1distill` 
-- Student base model report (placeholder): `qwen25`
+- li2024symbolicchainofthoughtdistillationsmall
+- wei2023chainofthoughtpromptingelicitsreasoning
+- wang2023selfconsistencyimproveschainthought
+- hu2021loralowrankadaptationlarge
+- dettmers2023qloraefficientfinetuningquantized
+- cobbe2021trainingverifierssolvemath
+- wolf2020huggingfacestransformersstateoftheartnatural
+- kudo2018sentencepiecesimplelanguageindependent
+- sennrich2016neuralmachinetranslationrare
+- bitsandbytes
+- peft
+- lhoest2021datasetscommunitylibrarynatural
+- Ansel_PyTorch_2_Faster_2024
+- accelerate
+- openrouter
+- runpod
+- The_pandas_development_team_pandas-dev_pandas_Pandas
+- Hunter_Matplotlib_A_2D_2007
+- Waskom2021
+- kluyver2016jupyter
+- uv
+- tqdm
+- deepseekai2025deepseekr1incentivizingreasoningcapability
+- qwen2025qwen25technicalreport
+- vaswani2023attentionneed
+- brown2020languagemodelsfewshotlearners
+- kaplan2020scalinglawsneurallanguage
+- hoffmann2022trainingcomputeoptimallargelanguage
+- ouyang2022traininglanguagemodelsfollow
+- hinton2015distilling
+- zagoruyko2017paying
+- furlanello2018bornagain
+- xie2020noisystudent
+- kim2016sequence
+- gou2021survey
+- houlsby2019parameter
+- pfeiffer2020adapterfusion
+- li2021prefixtuning
+- lester2021power
+- nvidia2024qlora
 
-
-## 10. Ethics, safety, and licensing
+## Ethics, safety, and licensing
 
 - Dataset licensing and usage rights: GSM8K is MIT License.
 - API usage and privacy: No sensitive data used; ensure compliance with provider ToS (OpenRouter).
 - Chain-of-thought disclosure: CoTs generated for research and not redistributed beyond allowed terms (MIT License)
 - Environmental and cost considerations: report token usage and spend; minimize wasteful runs.
-
-
-## 11. Reproducibility statement
-
-- Seeds: 42 for training and data splitting.
-- Versioning: commit hash and `uv.lock` for dependencies; Python 3.11.
-- Hardware notes: GPU class (RTX 4090 24GB) sufficient for LoRA + 4-bit.
-- Artifacts: checkpoints under `artifacts/models/...`; predictions CSVs; meta JSONs for teacher calls.
-- Exact prompts and configs archived in repo (see Appendices).
-
 
 ## 12. Acronyms and glossary [TO FILL]
 
@@ -276,16 +218,12 @@ Maintain the bibliography in `BIBLIOGRAPHY.bib` and cite the following canonical
 - Qwen2.5 - Qwen/Qwen2.5 family of decoder-only LLMs
 - DeepSeek R1 Distill - DeepSeek distilled reasoning model series (teacher)
 
-## Appendices
-
-### A. Prompts (verbatim)
+### A. Prompts
 
 - CoT system prompt: from `prompts/cot/system.txt`.
 - CoT user prompt: from `prompts/cot/user.txt`.
 - Label-only system prompt: from `prompts/label_only/system.txt`.
 - Label-only user prompt: from `prompts/label_only/user.txt`.
-
-Include sanitized examples as needed.
 
 ### B. Configuration summaries
 
@@ -293,8 +231,6 @@ Include sanitized examples as needed.
 - LoRA config: r=16, alpha=32, dropout=0.05; targeted modules.
 - Quantization: 4-bit nf4, double quant, bf16 compute.
 - Seeds and environment variables.
-
-[TO FILL: Exported JSON/YAML of final configs]
 
 ### C. Pricing basis and API cost tables
 - Final per‑1M input/output prices and teacher API pricing details used for Sections 9.3–9.4.
@@ -308,33 +244,19 @@ Include sanitized examples as needed.
 - Benchmarking and exports: `notebooks/benchmark.ipynb`; `predictions.csv`, `best_models_predictions.csv`.
 - Configuration and prompts: `src/config.py`, `prompts/`.
 
-### E. Figures and tables index [TO FILL]
-
+### E. Figures and tables index
 - Figure 1: Pipeline overview.
-- Figure 2–3: Training loss/validation loss (SCoTD, label-only).
-- Figure 4: Accuracy per checkpoint (both modes).
-- Figure 5–7: Distributions (answer length, completion tokens, latency).
-- Figure 8: Cost per query distribution.
+- Figure 2: Label-only training loss, learning rate, grad norm, eval loss curves.
+- Figure 3: SCoTD training loss, learning rate, grad norm, eval loss curves.
+- Figure 4: Accuracy per checkpoint (SCoTD vs label-only vs baselines).
+- Figure 5: Distribution of reasoning step counts (correct vs incorrect teacher samples).
+- Figure 6: Latency distribution (ms) by correctness.
+- Figure 7: Cost per query distribution (USD) by correctness.
+- Figure 8: Answer length (characters) distribution (correct vs incorrect).
+- Figure 9: Completion token length distribution (correct vs incorrect).
 - Table 1: Hyperparameters per mode.
 - Table 2: Dataset stats before/after cleaning.
 - Table 3: Accuracy summary (base vs student SCoTD vs label-only vs teacher).
-
-### F. Technology primers (explanatory)
-
-- QLoRA with 4-bit nf4:
-  - Load base weights quantized to 4-bit nf4 (double quantization) with bf16 compute; train low-rank adapters (LoRA) on targeted modules. Preserves memory while retaining headroom to learn reasoning traces.
-- Tokenizers (SentencePiece/BPE):
-  - Subword tokenization balances vocabulary size with coverage; affects sequence length, truncation, and numeric formatting behaviors.
-- bitsandbytes:
-  - Provides 4/8-bit quantization kernels and paged optimizers (e.g., paged_adamw_8bit) reducing VRAM and host RAM usage.
-- PEFT:
-  - Library for parameter-efficient strategies (LoRA et al.); enables injecting adapters into q/k/v/o and MLP projections.
-- DeepSeek R1 Distill (teacher):
-  - `deepseek/deepseek-r1-distill-qwen-32b` used via OpenRouter; strong reasoning CoT generator under structured prompts.
-- Qwen 2.5 (student base):
-  - `Qwen/Qwen2.5-3B` decoder-only model; suitable for LoRA + 4-bit finetuning on a single 24GB GPU.
-- BF16 and bf16 training:
-  - bfloat16 compute offers wider dynamic range vs FP16, improving stability; used for forward/backward passes with quantized base weights.
 
 ## Optional repository polish (non-blocking) [TO FILL if desired]
 
