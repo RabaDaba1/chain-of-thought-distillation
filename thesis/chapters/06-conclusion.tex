@@ -1,37 +1,26 @@
 \chapter{Conclusion}
 
 \section{Summary of objectives}
-The thesis investigated whether supervised chain-of-thought distillation (SCoTD) can improve a 3B-class small language model’s math reasoning accuracy on GSM8K under strict greedy evaluation, and compared rationale+answer supervision to answer-only (label-only) fine-tuning within a constrained single-GPU environment.
+The thesis investigated whether symbolic chain-of-thought distillation (SCoTD) can improve a 3B-class small language model’s math reasoning accuracy on GSM8K under strict greedy evaluation, and compared rationale+answer supervision to answer-only (label-only) fine-tuning within a constrained single-GPU environment.
 
 \section{Answers to research questions}
 \textbf{RQ1}: SCoTD improved the student from 70.51\% (base with CoT prompting) to 78.54\% (+8.03 points). Thus, supervised rationale transfer is effective for multi-step arithmetic in a 3B model under resource constraints.
 
-\textbf{RQ2}: Label-only fine-tuning improved from 10.99\% to 15.01\% (+4.02 points) but remained far below SCoTD. Intermediate supervision is substantially more informative than final-answer-only supervision for this task and evaluation regime.
+\textbf{RQ2}: Label-only fine-tuning improved from 10.99\% to 15.01\% (+4.02 points) but remained far below SCoTD. Intermediate supervision is substantially more informative than final-answer-only supervision for this task and evaluation method.
 
 \section{Key conclusions}
 \begin{itemize}
     \item Distilling structured teacher reasoning traces yields significant accuracy gains without increased inference-time cost.
     \item Rationale diversity (30 generations/question) combined with correctness filtering and deduplication produces a high-signal training set.
-    \item Parameter-efficient fine-tuning (LoRA + QLoRA) provides adequate adaptation capacity for reasoning improvements in small models.
-    \item Strict formatting multiplies penalties for minor output deviations, especially for label-only training; evaluation design materially affects reported performance.
-    \item Accuracy improvement saturates before full token-level convergence; additional training after the best accuracy checkpoint mainly refines stylistic fidelity.
-\end{itemize}
-
-\section{Practical guidance}
-\begin{itemize}
-    \item \textbf{Data collection}: Oversample teacher CoTs per question, then filter strictly for numeric correctness and deduplicate exact rationale strings.
-    \item \textbf{Length control}: Remove extreme-length outliers (>99th percentile total tokens) to avoid memory spikes without harming diversity.
-    \item \textbf{Training}: Monitor eval loss and accuracy concurrently; implement early stopping once accuracy plateaus to save compute.
-    \item \textbf{Formatting robustness}: Enforce output templates during training; consider lightweight post-generation format validation or constrained decoding for production.
-    \item \textbf{Resource efficiency}: Use 4-bit quantization plus LoRA ranks tuned to memory budget; enable gradient checkpointing and bf16 for stability.
-    \item \textbf{Evaluation}: Maintain a strict parser for reproducibility; separately track formatting vs numeric errors for diagnostic insight.
+    \item Parameter-efficient fine-tuning provides adequate adaptation capacity for reasoning improvements in small models under tight resource constraints.
+    \item Strict formatting multiplies penalties for minor output deviations, especially for label-only training; evaluation design noticeably affects reported performance.
 \end{itemize}
 
 \section{Limitations recap}
-Single dataset and backbone, absence of self-consistency decoding, no controlled ablations on filtering components, and unquantified formatting error rates limit generalizability and completeness.
+Single dataset and model, absence of self-consistency decoding, and lack of formatting error analysis limit generalizability and depth of insights. Future work should address these gaps.
 
-\section{Recommended next steps}
-Extend to additional reasoning benchmarks, measure formatting error breakdown, experiment with self-consistency for the distilled student, and test hybrid rationale+logit distillation. Evaluate cross-task adapter composability and curriculum sequencing of rationales.
+\section{Next steps}
+Extend to additional reasoning benchmarks, model sizes and architectures, analyze formatting error influence on evaluation, experiment with self-consistency, and test distillation loss.
 
 \section{Closing}
-Supervised chain-of-thought distillation offers a cost-efficient method to elevate small model reasoning without reliance on large teacher inference at deployment time. Under constrained hardware, combining high-quality rationale curation with parameter-efficient fine-tuning yields meaningful accuracy gains and provides a reproducible path toward more capable small-scale reasoning systems.
+Symbolic chain-of-thought distillation offers a cost-efficient method to elevate small model reasoning without reliance on large teacher inference at deployment time. Under constrained hardware, combining high-quality rationale curation with parameter-efficient fine-tuning yields meaningful accuracy gains and provides a reproducible path toward more capable small-scale reasoning systems.

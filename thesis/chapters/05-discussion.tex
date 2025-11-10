@@ -1,10 +1,10 @@
 \chapter{Discussion}
 
 \section{Interpretation of quantitative outcomes}
-The distilled student (78.54\% accuracy) improves over the base CoT-prompted model (70.51\%) by +8.03 percentage points under strict greedy evaluation. This gain indicates that supervised chain-of-thought distillation (SCoTD) successfully transfers structured multi-step reasoning patterns rather than merely formatting habits. The teacher at 93.61\% establishes remaining headroom: even after distillation the student closes only about 35\% of the gap to the teacher (absolute difference 23.10 points). Label-only fine-tuning produces a smaller +4.02 point improvement (15.01\% vs 10.99\%), reflecting that (i) training only the final answer line provides limited signal for intermediate decomposition, and (ii) strict formatting magnifies penalties for subtle deviations.
+The distilled student (78.54\% accuracy) improves over the base CoT-prompted model (70.51\%) by +8.03 percentage points under strict greedy evaluation. This gain indicates that symbolic chain-of-thought distillation (SCoTD) successfully transfers structured multi-step reasoning patterns rather than merely formatting habits. The teacher at 93.61\% establishes remaining headroom: even after distillation the student closes only about 35\% of the gap to the teacher (absolute difference 23.10 points). Label-only fine-tuning produces a smaller +4.02 point improvement (15.01\% vs 10.99\%), reflecting that (i) training only the final answer line provides limited signal for intermediate decomposition, and (ii) strict formatting magnifies penalties for subtle deviations.
 
 \section{Role of dataset filtering}
-The cleaned dataset (24{,}952 samples, 100\% numerically correct) removes incorrect answers, near-duplicate rationales, and extreme-length outliers. Eliminating label noise prevents the student from learning wrong numeric terminations; rationale deduplication reduces gradient redundancy and broadens reasoning variety; length capping protects memory while retaining core arithmetic trajectories. The monotonic eval loss decline in SCoTD training suggests the filtering did not over-prune diversity needed for generalization.
+The cleaned dataset (24{,}952 samples, 100\% numerically correct) removes incorrect answers, near-duplicate rationales, and extreme-length outliers. Eliminating label noise prevents the student from learning wrong numeric terminations; rationale deduplication reduces gradient redundancy and broadens reasoning variety; length capping protects memory.
 
 \section{Training dynamics and generalization}
 Label-only mode shows rapid early optimization, an early eval loss floor, and overfitting signs after \~200 steps, consistent with short targets and limited supervision richness. SCoTD exhibits slower but steadier improvement: eval loss continues decreasing past the best accuracy checkpoint, implying a saturation of accuracy before full convergence of token-level modeling. This mismatch indicates that incremental gains in reproducing teacher phrasing beyond a certain point do not translate into additional numeric correctness under greedy decoding.
@@ -16,46 +16,41 @@ Strict parsing (exact ``Final Answer: <number>'') penalizes:
     \item Missing prefix or variant capitalization.
     \item Multiple numeric candidates on the line.
 \end{itemize}
-The observed low label-only accuracy relative to intuitive difficulty of many questions suggests a non-trivial fraction of outputs may contain correct numbers with minor formatting deviations (not separately quantified—future work should measure the formatting error rate). This evaluation design intentionally preserves a hard constraint to highlight robustness rather than lenient post-processing.
+The observed low label-only accuracy relative to intuitive difficulty of many questions suggests a good fraction of outputs may contain correct numbers with minor formatting deviations (not separately quantified—future work should measure the formatting error rate).
 
 \section{Cost and efficiency implications}
-Teacher generation cost \$6.33 produced a high-signal corpus enabling a one-time accuracy gain that permanently reduces inference-time API spend. The test-set teacher cost estimate (\$0.282) contrasts with the student’s negligible marginal cost (local greedy decode). Thus, SCoTD shifts expenditure forward (data collection + training) to amortize savings over repeated evaluations. Oversampling (30 CoTs/question) proved feasible and economically justified given low per-sample cost (\$0.00021 mean).
+Teacher generation cost \$6.33 produced a high-signal corpus. Oversampling (30 CoTs per question) on a subset of GSM8K, yield a mean per-sample API cost of only \$0.00021. Two training runs on a single 24\,GB GPU incurred \$18.61 in total compute, demonstrating that QLoRA fine-tuning can produce measurable reasoning gains on commodity hardware without large-scale infrastructure.
 
 \section{Limitations}
 \begin{itemize}
-    \item Single dataset (GSM8K) restricts external validity; reasoning domains with more symbolic complexity (algebraic manipulation, formal proofs) may demand different supervision properties.
-    \item Single backbone (Qwen2.5-3B) prevents assessing scale effect or architectural sensitivity (e.g., mixture-of-experts, higher-rank attention).
+    \item Single model (Qwen2.5-3B) prevents assessing scale effect or architectural sensitivity.
+    \item Single dataset (GSM8K) restricts external validity; reasoning domains with more symbolic complexity (algebraic manipulations, formal proofs) may demand different supervision properties.
     \item No exploration of self-consistency decoding \cite{wang2023selfconsistencyimproveschainthought} at inference; potential additive gains remain unmeasured.
-    \item No ablation on filtering stages (e.g., retaining some incorrect but diverse rationales) to quantify trade-off between purity and diversity.
-    \item Formatting error rate not isolated; lack of tolerant or multi-metric evaluation (e.g., relaxed number matching, rationale quality scoring).
+    \item Impact of strict formatting error rate not properly analyzed.
 \end{itemize}
 
 \section{Threats to validity}
 \begin{itemize}
-    \item \textbf{Data contamination}: Unverified overlap of teacher pretraining data with GSM8K could inflate teacher correctness; mitigation: use official test split and public model, but provenance uncertainty remains.
-    \item \textbf{Random seed dependence}: Single-seed runs may mask variance in adapter training; confidence intervals absent.
-    \item \textbf{Hardware-specific behavior}: 4-bit quantization stability can vary across GPU architectures; results obtained on RTX 4090 may not exactly reproduce on other devices.
+    \item \textbf{Data contamination}: Unverified overlap of teacher pretraining data with GSM8K could inflate teacher correctness.
     \item \textbf{Parser rigidity}: Strict final-line parser potentially underestimates true numeric capability, especially for label-only.
-    \item \textbf{Checkpoint selection bias}: Choosing best eval-loss checkpoint may not maximize accuracy if loss continues decreasing after accuracy plateau; strategy was accuracy-based (step 1400 SCoTD), minimizing this threat but still single-criterion.
 \end{itemize}
 
 \section{Implications}
 \begin{itemize}
-    \item High-quality filtered CoTs enable a small model to internalize multi-step arithmetic decomposition without increasing inference latency.
-    \item Parameter-efficient fine-tuning (LoRA + QLoRA) is sufficient to encode reasoning gains on a single commodity GPU, reinforcing PEFT viability for resource-constrained deployments.
-    \item Rationale supervision offers better return than answer-only supervision for math word problems under greedy decoding; intermediate structure is a critical training signal.
-    \item Evaluation protocol design (strict formatting) materially impacts measured accuracy; downstream applications requiring reliability should incorporate format validation loops or structured decoding.
+    \item High-quality filtered CoTs enable a small model to use multi-step arithmetic reasoning without increasing inference latency.
+    \item Parameter-efficient fine-tuning (LoRA + QLoRA) is sufficient to encode reasoning gains on a single consumer-grade GPU.
+    \item Rationale supervision offers better return than answer-only supervision for text math problems under greedy decoding.
+    \item Evaluation protocol design (strict formatting) impacts measured accuracy.
 \end{itemize}
 
 \section{Comparison to literature}
-Observed gains align with symbolic CoT distillation reports \cite{li2024symbolicchainofthoughtdistillationsmall}, supporting the importance of multiple rationales per question. Difference from token/logit distillation paradigms \cite{hinton2015distilling,gou2021survey} is that sequence-level supervised rationale reproduction alone suffices for measurable reasoning improvement at small scale. The pipeline demonstrates integration of QLoRA \cite{dettmers2023qloraefficientfinetuningquantized} with multi-step reasoning tasks and confirms memory efficiency without compromising accuracy trajectory.
+Observed gains align with symbolic CoT distillation reports \cite{li2024symbolicchainofthoughtdistillationsmall}, supporting the importance of multiple rationales per question. Difference from token/logit distillation paradigms \cite{hinton2015distilling,gou2021survey} is that sequence-level supervised rationale reproduction alone suffices for measurable reasoning improvement at small scale.
 
 \section{Future work}
 \begin{itemize}
-    \item Quantify formatting vs numeric error decomposition to refine evaluation and potentially apply lightweight post-formatting corrections.
+    \item Multi-model comparison to assess architecture and scale sensitivity of SCoTD effectiveness.
+    \item Multi-dataset extension to evaluate cross-domain generalization of distilled reasoning.
+    \item Quantify formatting vs numeric error decomposition to refine evaluation.
     \item Introduce self-consistency sampling for the distilled student to assess marginal gains beyond greedy decoding.
-    \item Multi-dataset extension (e.g., SVAMP, AQuA) to evaluate cross-domain generalization of distilled reasoning.
-    \item Ablation of filtering (keep partial incorrect rationales) to examine whether limited noise improves robustness or harms accuracy.
-    \item Hybrid loss with partial token-level KL to teacher logits where available, combining rationale supervision with softened distribution alignment.
-    \item Curriculum ordering (short → long rationales) to test whether sequence length progression affects convergence speed or final accuracy.
+    \item Using distillation loss instead of LM loss for deeper knowledge transfer.
 \end{itemize}

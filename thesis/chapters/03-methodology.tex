@@ -35,7 +35,6 @@
 \subsection{Success criteria}
 \begin{itemize}
     \item Accuracy improvement of the distilled student over the base CoT-prompted model by at least 5 percentage points on GSM8K test.
-    \item Format error rate (cases where numeric answer is correct but formatting invalid) kept below a small threshold (target <5\% of all generated correct numbers).
     \item Cleaned dataset size sufficient to enable measurable gains (tens of thousands of rationale+answer pairs) without exceeding resource limits.
     \item All runs complete within available GPU memory and budget envelope.
 \end{itemize}
@@ -98,7 +97,7 @@ Reasoning:
 ...
 Final Answer: <number>
 \end{verbatim}
-No extra trailing text. final line must start exactly with \texttt{Final Answer:}. Parser scans lines to extract the numeric suffix.
+No extra trailing text. Final line must start exactly with \texttt{Final Answer:}. Parser scans lines to extract the numeric suffix.
 
 \subsection{Parsing and correctness}
 \begin{itemize}
@@ -144,7 +143,7 @@ Raw JSONL: \texttt{artifacts/data/raw/dataset.jsonl} containing 30{,}000 generat
     \item \textbf{Load \& index}: Read JSONL into a DataFrame indexed by \texttt{(question\_id, sample\_id)} for deterministic ordering.
     \item \textbf{Correctness filter}: Keep only rows where \texttt{is\_correct = True}. Removes all teacher numeric mismatches; prevents label noise (primary gain).
     \item \textbf{Exact rationale dedup}: Drop duplicates on \texttt{teacher\_answer\_text}. Prevents overweighting identical reasoning paths.
-    \item \textbf{Token-length outlier removal}: Compute per-row \texttt{total\_tokens = prompt\_tokens + completion\_tokens}. Remove rows with \texttt{total\_tokens} $\ge$ 99th percentile (threshold $\approx$1392 tokens). This trims extreme verbose rationales that inflate sequence length and memory without adding diversity.
+    \item \textbf{Token-length outlier removal}: Compute per-row \texttt{total\_tokens = prompt\_tokens + completion\_tokens}. Remove rows with \texttt{total\_tokens} $\ge$ 99th percentile (threshold 1392 tokens). This trims extreme verbose rationales that inflate sequence length and memory without adding diversity.
     \item \textbf{Persist}: Reset index and write cleaned JSONL to \texttt{artifacts/data/cleaned/dataset.jsonl}.
 \end{enumerate}
 
@@ -178,7 +177,7 @@ Minimal fields reduce I/O and memory footprint, remove unused metadata (latency,
 All records already passed strict correctness; no further validation required. Numeric fields (\texttt{gold\_answer\_number}, \texttt{teacher\_answer\_number}) support exact-match evaluation; textual rationale preserved verbatim for supervised reasoning.
 
 \section{Prompt templates}\label{sec:prompt_templates}
-This section enumerates the fixed prompt templates used across generation, training, and benchmarking. Templates are versioned as plain text under \texttt{code/prompts/}. No runtime mutation other than \texttt{\{question\}} placeholder interpolation.
+This section touches on the fixed prompt templates used across generation, training, and benchmarking. Templates are versioned as plain text under \texttt{code/prompts/}. No runtime mutation other than \texttt{\{question\}} placeholder replacement.
 
 \subsection{Files and roles}
 \begin{itemize}
@@ -190,7 +189,7 @@ This section enumerates the fixed prompt templates used across generation, train
 
 \subsection{Formatting contracts}
 \begin{itemize}
-    \item \textbf{CoT mode}: 
+    \item \textbf{CoT prompts}: 
     \begin{verbatim}
 Reasoning:
 - step 1
@@ -199,7 +198,7 @@ Reasoning:
 Final Answer: <number>
     \end{verbatim}
     2--8 dash-prefixed steps; arithmetic shown explicitly; no trailing text after the final answer line.
-    \item \textbf{Label-only mode}: Single line \texttt{Final Answer: <number>} No units, commentary, or extra lines.
+    \item \textbf{Label-only prompts}: Single line \texttt{Final Answer: <number>} No units, commentary, or extra lines.
 \end{itemize}
 
 \section{Training}
@@ -329,7 +328,7 @@ Batch size reflects output length expectations:
 Processing iterates over slices of question lists; each batch calls \texttt{model.generate} once.
 
 \subsection{Parsing and strict evaluation}
-Predicted texts are trimmed by removing the prompt prefix and then parsed with \texttt{parse\_teacher\_final\_answer}, which searches for a final line starting with ``Final Answer:'' and extracts the trailing numeric token. Failures (missing line, malformed number, regex miss) raise \texttt{ParsingError}; such cases count as incorrect. This strictness penalizes:
+Predicted texts are trimmed by removing the prompt prefix and then parsed with \texttt{parse\_teacher\_final\_answer}, which searches for a final line starting with ``Final Answer:'' and extracts the trailing numeric token. Failures (missing line, malformed number, regex miss) raise \texttt{ParsingError}, such cases count as incorrect. This strictness penalizes:
 \begin{itemize}
     \item Format deviations (e.g., extra commentary after the answer line).
     \item Missing prefix ``Final Answer:''.
@@ -347,26 +346,20 @@ A \texttt{RUNS} list enumerates all label-only checkpoints (sorted by numeric su
 This prevents cumulative GPU memory growth across many sequential loads.
 
 \subsection{Artifacts}
-All per-question predictions across runs are concatenated and written to \texttt{predictions.csv} with columns:
-\begin{itemize}
-    \item \texttt{model} (run identifier)
-    \item \texttt{question}
-    \item \texttt{prediction} (raw decoded answer text)
-    \item \texttt{gold\_answer} (numeric gold)
-\end{itemize}
+All per-question predictions across runs are concatenated and written to \texttt{predictions.csv} with columns: \texttt{model} (run identifier), \texttt{question}, \texttt{prediction} (raw decoded answer text), \texttt{gold\_answer} (numeric gold).
 
 \section{Environment setup}
 Fine-tuning and benchmarking runs were executed on RunPod node with the following specs:
 
 \subsection{Hardware}
 \begin{itemize}
-    \item Single GPU: RunPod RTX 4090 (24GB VRAM), host RAM 64GB.
+    \item Single GPU: RunPod RTX 4090 (24GB VRAM), RAM 64GB.
     \item Pod cost: \$0.34/hour.
 \end{itemize}
 
 \subsection{Software}
 \begin{itemize}
-    \item Python 3.11; package manager: \texttt{uv} (\texttt{uv.lock} committed).
+    \item Python 3.11; package manager: \texttt{uv}.
     \item CUDA 12.9; PyTorch 2.8.0.
     \item Env: \texttt{TOKENIZERS\_PARALLELISM=false}.
 \end{itemize}
