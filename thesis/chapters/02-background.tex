@@ -137,7 +137,7 @@ This approach enables fine-tuning larger backbones under tight memory budgets an
 \end{figure}
 
 \section{Tokenizers}
-Tokenization converts raw text into a sequence of discrete token IDs drawn from a fixed vocabulary. Language models as one of the first forward pass steps consume sequence of token IDs as input and map them to their embeddings vectors. A good scheme balances coverage (few unknowns), compact sequences (shorter length for a given text), and stability of encoding/decoding.
+Tokenization converts raw text into a sequence of discrete token IDs drawn from a fixed vocabulary. Language models consume token IDs and map them to embedding vectors.
 
 \subsection{Subword methods}
 Pure word-level vocabularies suffer from out-of-vocabulary (OOV) issues, while character-level tokenization produces very long sequences. Subword tokenization offers a compromise by decomposing words into frequent subunits that compose to any string, including rare words and misspellings \cite{sennrich2016neuralmachinetranslationrare}.
@@ -161,7 +161,7 @@ Implementation frameworks such as SentencePiece and Transformers provide standar
 \subsubsection{Vocabulary}
 Larger token vocabularies can represent up to whole words, reducing sequence length and attention cost. However, they implicitly increase embedding and output layer sizes, memory, and may cause overfitting. Smaller vocabularies generalize better to rare forms but inflate sequence length, which increases quadratic attention cost and risk of truncation. Practical choices range from 16k-200k subwords.
 
-\subsubsection{Normalization and pre-tokenization.}
+\subsubsection{Normalization and pre-tokenization}
 Many pipelines normalize text (e.g., Unicode NFKC, lowercasing, whitespace handling) to improve robustness; SentencePiece can integrate normalization and avoid external word boundary rules \cite{kudo2018sentencepiecesimplelanguageindependent}. Pre-tokenizers may split on whitespace and punctuation to enforce word boundary awareness before applying subword merges. Choices here affect how punctuation, casing, and whitespace survive round-trip detokenization.
 
 \subsection{Special tokens and sequence framing}

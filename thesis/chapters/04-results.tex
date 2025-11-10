@@ -12,7 +12,6 @@ This chapter reports empirical outcomes of symbolic chain-of-thought distillatio
     \item Parsing: requires a line starting \texttt{Final Answer: } followed by a single numeric token; any deviation counts as incorrect.
 \end{itemize}
 
-% filepath: /home/rabadaba/engineering-thesis/thesis/chapters/04-results.tex
 \begin{table}[!h]
     \centering
     \begin{tabular}{l r}
@@ -26,8 +25,8 @@ This chapter reports empirical outcomes of symbolic chain-of-thought distillatio
         Base (label-only prompting) & 10.99 \\
         \hline
     \end{tabular}
-    \label{tab:headline-accuracies}
     \caption{GSM8K test set accuracies (strict numeric exact-match, greedy decoding).}
+    \label{tab:headline-accuracies}
 \end{table}
 
 Thus SCoTD yields a +8.03 percentage-point gain over the base CoT baseline, while label-only supervision gives a +4.02 point gain over the label-only baseline under strict formatting.
@@ -65,7 +64,7 @@ Saved every 50 steps; best accuracy at step 200 (15.01\%). Subsequent checkpoint
         \includegraphics[width=\linewidth]{img/label_only_train_grad_norm.png}
         \caption{Grad norm}
     \end{subfigure}
-    \caption{Label-only optimization dynamics: warmup then linear LR decay; early high gradient norms (>6) collapse to a stable 1.5--2.5.}
+    \caption{Label-only optimization dynamics: warmup then linear LR decay; early high gradient norms ($>6$) collapse to a stable 1.5--2.5.}
     \label{fig:labelonly-dynamics}
 \end{figure}
 
@@ -124,7 +123,7 @@ Observations:
     \centering
     \includegraphics[width=0.48\linewidth]{img/reasoning_step_count_histogram.png}
     \includegraphics[width=0.48\linewidth]{img/latencies_histogram.png}
-    \caption{Left: reasoning step count (mode 5, most in [4,7], rare long tails >12). Right: latency distribution (median \~5.4s, long right tail to >18s).}
+    \caption{Left: reasoning step count (mode 5, most in [4,7], rare long tails $>12$). Right: latency distribution (median $\sim$5.4\,s, long right tail to $>18$\,s).}
     \label{fig:steps-latency}
 \end{figure}
 
@@ -132,14 +131,14 @@ Observations:
     \centering
     \includegraphics[width=0.295\linewidth]{img/cost_per_query_histogram.png}
     \includegraphics[width=0.685\linewidth]{img/answer_lengths_and_completion_token_histograms.png}
-    \caption{Left: cost per query (right-skew, peak near \$0.00019--0.00021). Right: answer length distributions (characters and tokens; token mode \~180, tail >800).}
+    \caption{Left: cost per query (right-skew, peak near \$0.00019--0.00021). Right: answer length distributions (characters and tokens; token mode $\sim$180, tail $>800$).}
     \label{fig:cost-length}
 \end{figure}
 
 Quantitative summaries:
 \begin{itemize}
     \item Step count: 90\% within 4--7 steps; incorrect samples slightly over-represented at 4--5 steps (shorter reasoning).
-    \item Latency: interquartile band concentrated between \~4.3s and \~7.1s; heavy tail aligns with longest completions.
+    \item Latency: interquartile band $\sim$4.3\,s to $\sim$7.1\,s; heavy tail aligns with longest completions.
     \item Cost: distribution approximates log-normal; long tail beyond \$0.00030 mainly verbose rationales.
     \item Length: character median \~150; token median 225 (matches earlier quantiles); incorrect answers mildly skew shorter (information insufficiency).
 \end{itemize}

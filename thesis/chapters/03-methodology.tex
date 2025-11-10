@@ -13,7 +13,7 @@
 
 \subsection{Non-functional requirements}
 \begin{itemize}
-    \item \textbf{Optimized scraping}: Highly asynchronous dataset generator with concurrency tuned to balance throughput and timeout/error rate.
+    \item \textbf{Optimized asynchronous generation}: Highly asynchronous dataset generator with concurrency tuned to balance throughput and timeout/error rate.
     \item \textbf{Observability}: Persistent logging of token usage, latency distributions, and derived cost metrics during dataset generation.
     \item \textbf{Data quality}: Diverse and coherent chain-of-thought reasoning. Removal of outliers.
     \item \textbf{Resource efficiency}: All training and benchmarking runs fit in available VRAM without OOM.
@@ -29,7 +29,7 @@
     \item Fixed public benchmark - GSM8K.
     \item Teacher accessed only via external API.
     \item Limited sequence context - excessive rationales must be pruned or truncated without losing the final answer line.
-    \item Budget cap at 200PLN.
+    \item Budget cap at 200\,PLN.
 \end{itemize}
 
 \subsection{Success criteria}
@@ -83,7 +83,7 @@ An async Python client (HTTPX) calls the OpenRouter \texttt{/chat/completions} e
     \item System prompt: concise reasoning format specification.
     \item User prompt: templated few-shot exemplars + target question.
     \item Decoding: \texttt{temperature=1.0}, \texttt{top\_p=1.0}.
-    \item Timeout: 120s.
+    \item Timeout: 120\,s.
 \end{itemize}
 
 Tenacity applies exponential backoff (max 5 attempts) on transport errors.
@@ -202,7 +202,7 @@ Final Answer: <number>
 \end{itemize}
 
 \section{Training}
-Goal of training is to fine-tune a single 3B decoder-only model (Qwen/Qwen2.5-3B) with QLoRA under 4-bit NF4 quantization and LoRA adapters, using bf16 compute and greedy decoding for evaluation.
+Goal of training is to fine-tune a single 3B decoder-only model (Qwen/Qwen2.5-3B) with QLoRA under 4-bit NF4 quantization and LoRA adapters, using bfloat16 precision.
 
 \subsection{Model, quantization, and PEFT}
 \begin{itemize}

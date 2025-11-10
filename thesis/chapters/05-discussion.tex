@@ -25,7 +25,7 @@ Teacher generation cost \$6.33 produced a high-signal corpus. Oversampling (30 C
 \begin{itemize}
     \item Single model (Qwen2.5-3B) prevents assessing scale effect or architectural sensitivity.
     \item Single dataset (GSM8K) restricts external validity; reasoning domains with more symbolic complexity (algebraic manipulations, formal proofs) may demand different supervision properties.
-    \item No exploration of self-consistency decoding \cite{wang2023selfconsistencyimproveschainthought} at inference; potential additive gains remain unmeasured.
+    \item No exploration of self-consistency decoding \cite{wang2023selfconsistencyimproveschainthought}; potential additive gains remain unmeasured.
     \item Impact of strict formatting error rate not properly analyzed.
 \end{itemize}
 
@@ -38,7 +38,7 @@ Teacher generation cost \$6.33 produced a high-signal corpus. Oversampling (30 C
 \section{Implications}
 \begin{itemize}
     \item High-quality filtered CoTs enable a small model to use multi-step arithmetic reasoning without increasing inference latency.
-    \item Parameter-efficient fine-tuning (LoRA + QLoRA) is sufficient to encode reasoning gains on a single consumer-grade GPU.
+    \item Parameter-efficient fine-tuning (LoRA + QLoRA) is sufficient to encode reasoning gains on a single consumer-grade 24\,GB GPU.
     \item Rationale supervision offers better return than answer-only supervision for text math problems under greedy decoding.
     \item Evaluation protocol design (strict formatting) impacts measured accuracy.
 \end{itemize}
