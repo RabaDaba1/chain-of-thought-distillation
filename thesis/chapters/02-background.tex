@@ -1,5 +1,7 @@
 \chapter{Background}
 
+This chapter establishes the theoretical foundations required to understand the proposed solution. It reviews the architecture of Large Language Models, specifically the Transformer and decoder-only variants, and discusses the mechanisms of prompting, knowledge distillation, and parameter-efficient fine-tuning. Additionally, it introduces the specific tools and benchmarks, such as tokenizers and the GSM8K dataset, that are central to the experiments.
+
 \section{Large language models}
 Large language models (LLMs) lie at the core of the current AI revolution. They are parametric probabilistic models that learn to represent the distribution of natural language sequences and generate text by autoregressively predicting one token at a time. Formally, given a tokenized sequence $(x_1, \dots, x_T)$, an LLM models $p(x_{1:T})=\prod_{t=1}^T p(x_t \mid x_{<t})$ and is trained to minimize the cross-entropy between predicted and observed tokens. LLMs derive their broad linguistic and factual knowledge from pretraining on massive text corpora using this objective, which at scale enables emergent capabilities such as in-context learning and reasoning.
 
@@ -24,7 +26,7 @@ Transformer architecture \cite{vaswani2023attentionneed} underlies most modern L
     \item \textbf{Residual connections and layer normalization}: Each sublayer is wrapped with residual additions and normalization for stability.
 \end{itemize}
 
-Computationally, attention has $O(L^2 d)$ time and $O(L^2)$ memory in sequence length $L$ (per batch and head factors omitted), while FFNs dominate parameter count with $O(d^2)$.
+Computationally, attention has $O(L^2 d)$ time and $O(L^2)$ memory in sequence length $L$ (per batch and head factors omitted), while FFNs dominate parameter count with $O(d^2)$. The architecture of a standard Transformer block is illustrated in Figure~\ref{fig:transformer-block}.
 
 \begin{figure}[!h]
     \centering
@@ -44,7 +46,7 @@ Transformers scale predictably with model size (parameters), data (tokens), and 
     \item \textbf{Inference}: latency and memory scale with depth and width; context length increases multiply attention cost without specialized kernels.
 \end{itemize}
 
-Despite costs, scaling yields emergent capabilities such as in-context learning and improved generalization \cite{brown2020languagemodelsfewshotlearners}.
+Despite costs, scaling yields emergent capabilities such as in-context learning and improved generalization \cite{brown2020languagemodelsfewshotlearners}. These relationships are visualized in Figure~\ref{fig:scaling-laws}, showing the power-law trends.
 
 \begin{figure}[!h]
     \centering
@@ -127,7 +129,7 @@ Quantization-aware fine-tuning combines PEFT with low-precision base weights to 
     \item LoRA (or other PEFT parameters) are maintained in higher precision and receive gradients.
     \item Careful quantizer design (NF4) and optimizer choices preserve training stability and accuracy close to full-precision baselines.
 \end{itemize}
-This approach enables fine-tuning larger backbones under tight memory budgets and decouples adaptation capacity (set by PEFT parameters like LoRA rank) from the storage format of the base model. Practical backends for 4-bit inference/training are widely available \cite{bitsandbytes}.
+This approach enables fine-tuning larger backbones under tight memory budgets and decouples adaptation capacity (set by PEFT parameters like LoRA rank) from the storage format of the base model. Practical backends for 4-bit inference/training are widely available \cite{bitsandbytes}. Figure~\ref{fig:qlora} depicts the memory layout of this method, highlighting the separation between frozen quantized weights and trainable adapters.
 
 \begin{figure}[!h]
     \centering
@@ -149,7 +151,7 @@ Common approaches:
     \item \textbf{SentencePiece}: optimizes a probabilistic unigram model over a candidate subword inventory and prunes units that hurt likelihood \cite{kudo2018sentencepiecesimplelanguageindependent}. It supports sampling alternative segmentations during training for robustness and can operate directly on raw text without external pre-tokenization.
 \end{itemize}
 
-Implementation frameworks such as SentencePiece and Transformers provide standardized training, encoding, and decoding pipelines \cite{kudo2018sentencepiecesimplelanguageindependent,wolf2020huggingfacestransformersstateoftheartnatural}. Variants like byte-level BPE ensure coverage of arbitrary Unicode by operating on UTF-8 bytes, which removes true OOVs at the cost of sometimes longer sequences for non-Latin scripts.
+Implementation frameworks such as SentencePiece and Transformers provide standardized training, encoding, and decoding pipelines \cite{kudo2018sentencepiecesimplelanguageindependent,wolf2020huggingfacestransformersstateoftheartnatural}. Variants like byte-level BPE ensure coverage of arbitrary Unicode by operating on UTF-8 bytes, which removes true OOVs at the cost of sometimes longer sequences for non-Latin scripts. An example of how text is split into tokens is shown in Figure~\ref{fig:tokenization-examples}.
 
 \begin{figure}[!h]
     \centering
@@ -172,6 +174,8 @@ Special tokens mark structure and control decoding:
     \item \textbf{Instruction tokens}: Special markers that indicate task boundaries or specify desired behavior (e.g., \texttt{<|user|>}, \texttt{<|assistant|>}, \texttt{<|thought|>}).
 \end{itemize}
 
+Figure~\ref{fig:sequence-framing} demonstrates how these tokens structure a conversation within the model's context window.
+
 \begin{figure}[!h]
     \centering
     \includegraphics[width=\linewidth]{img/prompt.png}
@@ -183,7 +187,7 @@ Special tokens mark structure and control decoding:
 GSM8K is a benchmark of 8.5K English grade-school math word problems designed to evaluate multi-step reasoning in natural language \cite{cobbe2021trainingverifierssolvemath}. Problems typically require 2-8 steps of elementary arithmetic ($+,-,\times,\div$) and include human-written, natural-language solutions with inline ``calculator annotations'' (intermediate computations) and a final integer answer on a separate line. The benchmark is widely used to study prompting and reasoning supervision; standard scoring is exact numeric match, often evaluated under chain-of-thought prompting and self-consistency sampling \cite{wei2023chainofthoughtpromptingelicitsreasoning,wang2023selfconsistencyimproveschainthought}.
 
 \subsection{Dataset structure}
-Released in English via HuggingFace Datasets \cite{lhoest2021datasetscommunitylibrarynatural}, GSM8K provides two configurations: a main set (question, rationale, final answer) and a socratic variant that interleaves sub-questions within the solution. Official splits comprise 7{,}473 training and 1{,}319 test problems \cite{cobbe2021trainingverifierssolvemath}; each instance pairs a question string with a multi-step natural-language solution containing intermediate calculations and a single integer final answer.
+Released in English via HuggingFace Datasets \cite{lhoest2021datasetscommunitylibrarynatural}, GSM8K provides two configurations: a main set (question, rationale, final answer) and a socratic variant that interleaves sub-questions within the solution. Official splits comprise 7{,}473 training and 1{,}319 test problems \cite{cobbe2021trainingverifierssolvemath}; each instance pairs a question string with a multi-step natural-language solution containing intermediate calculations and a single integer final answer. A typical sample from the dataset is presented in Figure~\ref{fig:gsm8k-example}, displaying the question and the solution consisting of step-by-step rationale and final numeric answer.
 
 \begin{figure}[!h]
     \centering
@@ -191,3 +195,5 @@ Released in English via HuggingFace Datasets \cite{lhoest2021datasetscommunityli
     \caption{GSM8K example: question, rationale with intermediate steps, and final answer.}
     \label{fig:gsm8k-example}
 \end{figure}
+
+This chapter has provided the necessary background on language modeling, distillation techniques, and efficient training methods. With these theoretical concepts defined, the following chapter describes the specific methodology and system architecture designed to implement Symbolic Chain-of-Thought Distillation.

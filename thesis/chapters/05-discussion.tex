@@ -1,5 +1,7 @@
 \chapter{Discussion}
 
+This chapter provides an in-depth analysis of the results reported in the previous chapter. It interprets the quantitative outcomes, examines the influence of dataset quality and formatting constraints, and contextualizes the findings within the broader landscape of current research and the study's limitations.
+
 \section{Interpretation of quantitative outcomes}
 The distilled student (78.54\% accuracy) improves over the base CoT-prompted model (70.51\%) by +8.03 percentage points under strict greedy evaluation. This gain indicates that symbolic chain-of-thought distillation (SCoTD) successfully transfers structured multi-step reasoning patterns rather than merely formatting habits. The teacher at 93.61\% establishes remaining headroom: even after distillation the student closes only about 35\% of the gap to the teacher (absolute difference 23.10 points). Label-only fine-tuning produces a smaller +4.02 point improvement (15.01\% vs 10.99\%), reflecting that (i) training only the final answer line provides limited signal for intermediate decomposition, and (ii) strict formatting magnifies penalties for subtle deviations.
 
@@ -21,36 +23,11 @@ The observed low label-only accuracy relative to intuitive difficulty of many qu
 \section{Cost and efficiency implications}
 Teacher generation cost \$6.33 produced a high-signal corpus. Oversampling (30 CoTs per question) on a subset of GSM8K, yield a mean per-sample API cost of only \$0.00021. Two training runs on a single 24\,GB GPU incurred \$18.61 in total compute, demonstrating that QLoRA fine-tuning can produce measurable reasoning gains on commodity hardware without large-scale infrastructure.
 
-\section{Limitations}
-\begin{itemize}
-    \item Single model (Qwen2.5-3B) prevents assessing scale effect or architectural sensitivity.
-    \item Single dataset (GSM8K) restricts external validity; reasoning domains with more symbolic complexity (algebraic manipulations, formal proofs) may demand different supervision properties.
-    \item No exploration of self-consistency decoding \cite{wang2023selfconsistencyimproveschainthought}; potential additive gains remain unmeasured.
-    \item Impact of strict formatting error rate not properly analyzed.
-\end{itemize}
-
-\section{Threats to validity}
-\begin{itemize}
-    \item \textbf{Data contamination}: Unverified overlap of teacher pretraining data with GSM8K could inflate teacher correctness.
-    \item \textbf{Parser rigidity}: Strict final-line parser potentially underestimates true numeric capability, especially for label-only.
-\end{itemize}
-
-\section{Implications}
-\begin{itemize}
-    \item High-quality filtered CoTs enable a small model to use multi-step arithmetic reasoning without increasing inference latency.
-    \item Parameter-efficient fine-tuning (LoRA + QLoRA) is sufficient to encode reasoning gains on a single consumer-grade 24\,GB GPU.
-    \item Rationale supervision offers better return than answer-only supervision for text math problems under greedy decoding.
-    \item Evaluation protocol design (strict formatting) impacts measured accuracy.
-\end{itemize}
+\section{Limitations and threats to validity}
+Several limitations constrain the generalizability of these findings. The study relies on a single model architecture (Qwen2.5-3B) and a single dataset (GSM8K), which prevents a broader assessment of how SCoTD scales or applies to domains requiring more complex symbolic manipulation or formal proofs. Additionally, the evaluation did not employ self-consistency decoding \cite{wang2023selfconsistencyimproveschainthought}, leaving potential additive gains unmeasured. A significant threat to validity is the possibility of data contamination, as the teacher model's pre-training data may have included the GSM8K test set, potentially inflating the quality of the generated supervision. Furthermore, the strict formatting requirements of the evaluation parser likely underestimate the true numeric capability of the models. This is particularly relevant in the label-only setting, where minor syntactic deviations result in penalties that may not reflect underlying reasoning failures.
 
 \section{Comparison to literature}
-Observed gains align with symbolic CoT distillation reports \cite{li2024symbolicchainofthoughtdistillationsmall}, supporting the importance of multiple rationales per question. Difference from token/logit distillation paradigms \cite{hinton2015distilling,gou2021survey} is that sequence-level supervised rationale reproduction alone suffices for measurable reasoning improvement at small scale.
+The results obtained in this study align with work on symbolic chain-of-thought distillation by Li et al. \cite{li2024symbolicchainofthoughtdistillationsmall}, which states that small models can learn reasoning patterns from larger teachers. While early research on CoT prompting suggested that reasoning capabilities emerge primarily in models larger than 10B parameters \cite{wei2023chainofthoughtpromptingelicitsreasoning}, our findings confirm that a 3B parameter model can indeed improve its reasoning accuracy (from 70.51\% to 78.54\%) when explicitly trained on reasoning traces. This contrasts with traditional distillation methods focused on logit approximation \cite{hinton2015distilling,gou2021survey}, demonstrating that sequence-level supervised fine-tuning on rationales is a viable alternative when access to teacher logits is restricted (e.g., API-based teachers). Furthermore, the performance gap between the student and the teacher (93.61\%) is consistent with the capacity gap expected between 3B and 32B parameter models, suggesting that while distillation bridges the gap, model scale remains a dominant factor in absolute performance.
 
-\section{Future work}
-\begin{itemize}
-    \item Multi-model comparison to assess architecture and scale sensitivity of SCoTD effectiveness.
-    \item Multi-dataset extension to evaluate cross-domain generalization of distilled reasoning.
-    \item Quantify formatting vs numeric error decomposition to refine evaluation.
-    \item Introduce self-consistency sampling for the distilled student to assess marginal gains beyond greedy decoding.
-    \item Using distillation loss instead of LM loss for deeper knowledge transfer.
-\end{itemize}
+\section{Implications and future directions}
+Despite the identified limitations, the study has clear implications for deploying efficient reasoning models. It demonstrates that high-quality, filtered CoT data enables small models to perform multi-step arithmetic reasoning without increasing inference latency. The results show that parameter-efficient fine-tuning (LoRA + QLoRA) is sufficient to encode these capabilities on consumer-grade hardware, and that rationale supervision yields better returns than answer-only supervision for math problems under greedy decoding. Future work should extend this approach to multiple model architectures and datasets to evaluate cross-domain generalization. Further research is also needed to quantify the trade-off between formatting errors and numeric accuracy, to assess the marginal gains of self-consistency sampling for distilled students, and to explore whether distillation loss functions could provide deeper knowledge transfer than standard language modeling loss.

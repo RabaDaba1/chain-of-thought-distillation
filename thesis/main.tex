@@ -13,14 +13,14 @@
 \shorttitleEN{CoT Distillation for Small LMs}
 
 
-\thesistype{Engineering Thesis}
-\supervisor{Dr. Krzysztof Kluza}
+\thesistype{Projekt dyplomowy}
+\supervisor{Dr inż. Krzysztof Kluza}
 
-\department{Department of Applied Computer Science}
+\department{Katedra Informatyki Stosowanej}
 
-\faculty{Faculty of Electrical Engineering, Automatics, Computer Science and Biomedical Engineering}
+\faculty{Wydział Elektrotechniki, Automatyki, Informatyki i Inżynierii Biomedycznej}
 
-\degreeprogramme{Computer science and intelligent systems}
+\degreeprogramme{Informatyka i Systemy Inteligentne}
 
 \date{\the\year{}}
 
@@ -30,12 +30,26 @@
 
 	
     \begin{abstract}
+    \thispagestyle{plain}
     This thesis investigates whether symbolic chain-of-thought distillation (SCoTD) can measurably improve the reasoning accuracy of a small language model on text math problems. A strong teacher model generates structured reasoning traces (CoT) for GSM8K, which are cleaned and deduplicated, and then used to finetune a 3B-class student via parameter-efficient adapters (LoRA) under 4-bit quantization. The training stack relies on modern open tooling for reproducibility and efficient use of a single 24GB GPU. Evaluation uses strict numeric exact-match parsing on GSM8K.
 
     Results show that SCoTD improves the student over a non-finetuned base with CoT prompting (78.54\% vs 70.51\%). A label-only variant also improves over its baseline (15.01\% vs 10.99\%), though strict formatting requirements likely undercount true ability. The teacher reaches 93.61\% on the GSM8K test split. Contributions include a cost-aware CoT data generation pipeline, a reproducible finetuning setup (LoRA + 4-bit nf4 + bf16), and an empirical analysis of accuracy, training dynamics, and operational costs. These findings support SCoTD as a practical method to enhance small models' reasoning under resource constraints.
     \end{abstract}
 
+    \clearpage
+
+    \begin{otherlanguage}{polish}
+    \begin{abstract}
+    \thispagestyle{plain}
+    Niniejsza praca bada, czy symboliczna destylacja łańcucha myśli (SCoTD) może wymiernie poprawić dokładność rozumowania małego modelu językowego w tekstowych zadaniach matematycznych. Silny model nauczyciela generuje ustrukturyzowane ślady rozumowania (CoT) dla zbioru GSM8K, które są czyszczone i deduplikowane, a następnie wykorzystywane do dostrojenia modelu ucznia klasy 3B przy użyciu efektywnych parametrowo adapterów (LoRA) z 4-bitową kwantyzacją. Stos technologiczny opiera się na nowoczesnych otwartych narzędziach zapewniających powtarzalność i efektywne wykorzystanie pojedynczego GPU 24 GB. Ewaluacja wykorzystuje ścisłe dopasowanie numeryczne na zbiorze GSM8K.
+
+    Wyniki pokazują, że SCoTD poprawia wyniki ucznia w porównaniu do modelu bazowego bez dostrajania z promptowaniem CoT (78,54\% vs 70,51\%). Wariant uczony tylko na etykietach również poprawia wyniki względem swojego poziomu odniesienia (15,01\% vs 10,99\%), chociaż rygorystyczne wymagania formatowania prawdopodobnie zaniżają rzeczywistą zdolność. Nauczyciel osiąga 93,61\% na zbiorze testowym GSM8K. Wkład pracy obejmuje potok generowania danych CoT uwzględniający koszty, powtarzalną konfigurację dostrajania (LoRA + 4-bit nf4 + bf16) oraz empiryczną analizę dokładności, dynamiki uczenia i kosztów operacyjnych. Wyniki te wspierają SCoTD jako praktyczną metodę ulepszania rozumowania małych modeli przy ograniczonych zasobach.
+    \end{abstract}
+    \end{otherlanguage}
+
     \noindent\textbf{Keywords:} LLM, chain-of-thought, distillation, LoRA, QLoRA, GSM8K, reasoning, quantization
+	
+	\clearpage
 
 	\setcounter{tocdepth}{2}
 	\tableofcontents

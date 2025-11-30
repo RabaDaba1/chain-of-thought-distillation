@@ -3,14 +3,9 @@
 This chapter reports empirical outcomes of symbolic chain-of-thought distillation (SCoTD) and label-only finetuning on GSM8K. All metrics use strict numeric exact-match evaluation under greedy decoding. No self-consistency sampling or answer normalization was applied.
 
 \section{Evaluation setup recap}
-\begin{itemize}
-    \item Base model: \texttt{Qwen/Qwen2.5-3B}, no finetuning.
-    \item Students: LoRA adapters trained on cleaned teacher data (SCoTD: rationale+answer, Label-only: final answer line only).
-    \item Teacher: \texttt{deepseek/deepseek-r1-distill-qwen-32b} via API.
-    \item Decoding: greedy (\texttt{do\_sample=false}) for all benchmarks.
-    \item Metric: accuracy = correct numeric parses / total questions (1{,}319 GSM8K test problems).
-    \item Parsing: requires a line starting \texttt{Final Answer: } followed by a single numeric token; any deviation counts as incorrect.
-\end{itemize}
+The evaluation framework relies on the \texttt{Qwen/Qwen2.5-3B} base model, which serves as the starting point for all experiments. Two student models were trained using LoRA adapters on cleaned teacher data: the SCoTD student, which learns to generate both the rationale and the answer, and the Label-only student, which is trained solely on the final answer line. The teacher model, \texttt{deepseek/deepseek-r1-distill-qwen-32b}, was accessed via API to generate the training data.
+
+For all benchmarks, decoding was performed greedily (\texttt{do\_sample=false}) to ensure deterministic results. The primary metric is accuracy, defined as the ratio of correct numeric parses to the total number of questions in the GSM8K test set (1{,}319 problems). The parsing logic is strict, requiring the output to contain a line starting with \texttt{Final Answer: } followed immediately by a single numeric token. Any deviation from this format is counted as an incorrect response.
 
 \begin{table}[!h]
     \centering
@@ -29,24 +24,25 @@ This chapter reports empirical outcomes of symbolic chain-of-thought distillatio
     \label{tab:headline-accuracies}
 \end{table}
 
-Thus SCoTD yields a +8.03 percentage-point gain over the base CoT baseline, while label-only supervision gives a +4.02 point gain over the label-only baseline under strict formatting.
+As shown in Table \ref{tab:headline-accuracies}, SCoTD yields a +8.03 percentage-point gain over the base CoT baseline, while label-only supervision gives a +4.02 point gain over the label-only baseline under strict formatting.
 
-\section{Checkpoint dynamics}
-\subsection{SCoTD}
-Model saved every 200 training steps. Best accuracy observed at step 1{,}400 (78.54\%). Checkpoints after this point exhibit slight stagnation (no further gains) despite continued training loss decrease, indicating diminishing returns and potential mild overfitting to rationale style rather than numeric robustness.
+\section{Checkpointing}
+The training process involved saving model checkpoints at regular intervals to monitor performance and identify the optimal stopping point. For the SCoTD model, checkpoints were saved every 200 training steps. The best accuracy was observed at step 1{,}400, reaching 78.54\%. Checkpoints saved after this point exhibited slight stagnation, with no further gains in accuracy despite a continued decrease in training loss. This pattern indicates diminishing returns and potential mild overfitting to the rationale style rather than an improvement in numeric robustness.
 
-\subsection{Label-only}
-Saved every 50 steps; best accuracy at step 200 (15.01\%). Subsequent checkpoints degrade or plateau, correlating with rising validation loss after early minimum. Early stopping at the first validation-loss inflection would preserve best generalization.
+In contrast, the Label-only model was saved more frequently, every 50 steps, due to its faster convergence. The best accuracy was recorded early at step 200 (15.01\%). Subsequent checkpoints showed a degradation or plateau in performance, which correlated with a rising validation loss after an early minimum.
 
-\section{Training behavior}
+\section{Training}
 \subsection{Label-only model}
 \begin{figure}[!h]
     \centering
-    \begin{subfigure}[b]{0.49\linewidth}
+    \begin{subfigure}[b]{0.9\linewidth}
+        \centering
         \includegraphics[width=\linewidth]{img/label_only_train_loss.png}
         \caption{Train loss}
     \end{subfigure}
-    \begin{subfigure}[b]{0.49\linewidth}
+    \par\bigskip
+    \begin{subfigure}[b]{0.9\linewidth}
+        \centering
         \includegraphics[width=\linewidth]{img/label_only_eval_loss.png}
         \caption{Eval loss}
     \end{subfigure}
@@ -56,11 +52,14 @@ Saved every 50 steps; best accuracy at step 200 (15.01\%). Subsequent checkpoint
 
 \begin{figure}[!h]
     \centering
-    \begin{subfigure}[b]{0.49\linewidth}
+    \begin{subfigure}[b]{0.9\linewidth}
+        \centering
         \includegraphics[width=\linewidth]{img/label_only_train_learning_rate.png}
         \caption{Learning rate}
     \end{subfigure}
-    \begin{subfigure}[b]{0.49\linewidth}
+    \par\bigskip
+    \begin{subfigure}[b]{0.9\linewidth}
+        \centering
         \includegraphics[width=\linewidth]{img/label_only_train_grad_norm.png}
         \caption{Grad norm}
     \end{subfigure}
@@ -68,21 +67,19 @@ Saved every 50 steps; best accuracy at step 200 (15.01\%). Subsequent checkpoint
     \label{fig:labelonly-dynamics}
 \end{figure}
 
-Observations:
-\begin{itemize}
-    \item Rapid optimization: train loss drops >75\% within first \~120 steps (Figure \ref{fig:labelonly-losses}a).
-    \item Generalization peak: eval loss minimum near 180--220 steps (Figure \ref{fig:labelonly-losses}b) aligns with best accuracy (15.01\%); subsequent rise indicates overfitting on formatting/token patterns.
-    \item Gradient norm collapse: large initial adaptation (Figure \ref{fig:labelonly-dynamics}b) precedes eval loss floor; post-collapse stability reflects limited sequence length.
-\end{itemize}
+The training dynamics of the label-only model are characterized by rapid optimization. As illustrated in Figure \ref{fig:labelonly-losses}a, the training loss drops by more than 75\% within the first 120 steps. This swift adaptation is mirrored in the evaluation loss (Figure \ref{fig:labelonly-losses}b), which reaches a minimum near steps 180--220. This window aligns with the peak accuracy of 15.01\%. The subsequent rise in evaluation loss indicates overfitting, likely to specific formatting or token patterns rather than underlying reasoning. Additionally, the gradient norms (Figure \ref{fig:labelonly-dynamics}b) show a large initial adaptation followed by a collapse to a stable range, reflecting the limited sequence length of the targets.
 
 \subsection{SCoTD model}
 \begin{figure}[!h]
     \centering
-    \begin{subfigure}[b]{0.49\linewidth}
+    \begin{subfigure}[b]{0.9\linewidth}
+        \centering
         \includegraphics[width=\linewidth]{img/sctod_train_loss.png}
         \caption{Train loss}
     \end{subfigure}
-    \begin{subfigure}[b]{0.49\linewidth}
+    \par\bigskip
+    \begin{subfigure}[b]{0.9\linewidth}
+        \centering
         \includegraphics[width=\linewidth]{img/sctod_eval_loss.png}
         \caption{Eval loss}
     \end{subfigure}
@@ -92,11 +89,14 @@ Observations:
 
 \begin{figure}[!h]
     \centering
-    \begin{subfigure}[b]{0.49\linewidth}
+    \begin{subfigure}[b]{0.9\linewidth}
+        \centering
         \includegraphics[width=\linewidth]{img/sctod_train_learning_rate.png}
         \caption{Learning rate}
     \end{subfigure}
-    \begin{subfigure}[b]{0.49\linewidth}
+    \par\bigskip
+    \begin{subfigure}[b]{0.9\linewidth}
+        \centering
         \includegraphics[width=\linewidth]{img/sctod_train_grad_norm.png}
         \caption{Grad norm}
     \end{subfigure}
@@ -104,21 +104,14 @@ Observations:
     \label{fig:sctod-dynamics}
 \end{figure}
 
-Observations:
-\begin{itemize}
-    \item Stable optimization: absence of large spikes (Figure \ref{fig:sctod-dynamics}b) due to longer sequences distributing updates.
-    \item Continued eval improvement: eval loss still falling past best accuracy checkpoint (Figure \ref{fig:sctod-losses}b) implying accuracy saturation before token-level optimum.
-    \item Low variance: constrained grad norm range suggests consistent convergence; rationale diversity did not destabilize training.
-\end{itemize}
+The SCoTD model exhibits more stable optimization behavior. Figure \ref{fig:sctod-dynamics}b shows an absence of large gradient spikes, likely due to the longer sequences distributing updates more evenly. Unlike the label-only model, the evaluation loss for SCoTD continues to improve past the point of best accuracy (Figure \ref{fig:sctod-losses}b). This implies that accuracy saturation occurs before the token-level optimum is reached. The gradient norms remain within a constrained range, suggesting consistent convergence and indicating that the diversity of rationales did not destabilize the training process.
 
 \subsection{Comparison}
-\begin{itemize}
-    \item Label-only: faster early loss reduction (Figure \ref{fig:labelonly-losses}a) but earlier generalization peak and overfitting (Figure \ref{fig:labelonly-losses}b).
-    \item SCoTD: sustained eval loss improvement (Figure \ref{fig:sctod-losses}b); accuracy plateau likely reflects reasoning ceiling rather than overfitting.
-    \item Gradient behavior: high initial label-only norms (Figure \ref{fig:labelonly-dynamics}b) vs. SCoTD’s moderate steady norms (Figure \ref{fig:sctod-dynamics}b) indicate incremental adaptation with longer rationales.
-\end{itemize}
+Comparing the two approaches reveals distinct behaviors. The label-only model achieves faster early loss reduction but suffers from an earlier generalization peak and subsequent overfitting. In contrast, SCoTD demonstrates sustained improvement in evaluation loss, where the accuracy plateau likely reflects a reasoning ceiling rather than overfitting. Furthermore, the gradient behavior differs significantly. The high initial norms of the label-only model contrast with the moderate, steady norms of SCoTD, indicating incremental adaptation when learning longer rationales.
 
 \section{Output length and latency distributions}
+The distribution of reasoning steps and generation latencies is shown in Figure~\ref{fig:steps-latency}.
+
 \begin{figure}[!h]
     \centering
     \includegraphics[width=0.48\linewidth]{img/reasoning_step_count_histogram.png}
@@ -126,6 +119,8 @@ Observations:
     \caption{Left: reasoning step count (mode 5, most in [4,7], rare long tails $>12$). Right: latency distribution (median $\sim$5.4\,s, long right tail to $>18$\,s).}
     \label{fig:steps-latency}
 \end{figure}
+
+Figure~\ref{fig:cost-length} illustrates the per-query cost distribution and the length of the generated answers in characters and tokens.
 
 \begin{figure}[!h]
     \centering
@@ -135,33 +130,16 @@ Observations:
     \label{fig:cost-length}
 \end{figure}
 
-Quantitative summaries:
-\begin{itemize}
-    \item Step count: 90\% within 4--7 steps; incorrect samples slightly over-represented at 4--5 steps (shorter reasoning).
-    \item Latency: interquartile band $\sim$4.3\,s to $\sim$7.1\,s; heavy tail aligns with longest completions.
-    \item Cost: distribution approximates log-normal; long tail beyond \$0.00030 mainly verbose rationales.
-    \item Length: character median \~150; token median 225 (matches earlier quantiles); incorrect answers mildly skew shorter (information insufficiency).
-\end{itemize}
+Analysis of the reasoning step counts shows that 90\% of the generated samples fall within the range of 4 to 7 steps. Interestingly, incorrect samples are slightly over-represented in the 4--5 step range, suggesting that shorter reasoning chains may correlate with lower accuracy. Regarding latency, the interquartile range spans from approximately 4.3 seconds to 7.1 seconds, with a heavy tail that aligns with the longest completions.
+
+The cost distribution approximates a log-normal shape, with a long tail extending beyond \$0.00030 that consists mainly of verbose rationales. In terms of length, the median character count is around 150, while the median token count is 225. Incorrect answers tend to be mildly shorter, which may indicate information insufficiency in those responses.
 
 \section{Dataset filtering outcomes}
-\subsection{Raw and cleaned sizes}
-\begin{itemize}
-    \item Raw generated samples: 30{,}000 (1{,}000 train questions $\times$ 30 teacher generations).
-    \item Teacher overall numeric correctness (raw): 93.75\% (28{,}125 correct).
-    \item Cleaned samples retained: 24{,}952 (100\% correct after filtering).
-\end{itemize}
+The data generation phase produced a total of 30{,}000 raw samples, derived from 1{,}000 training questions each queried 30 times. The teacher model demonstrated a high level of numeric correctness on this raw set, achieving 93.75\% (28{,}125 correct samples).
 
-\subsection{Removal breakdown}
-\begin{itemize}
-    \item Incorrect answers removed: 1{,}875.
-    \item Exact duplicate rationales removed: 2{,}917.
-    \item Length outliers (>\,99th percentile total tokens; threshold $\approx$1{,}392): $\sim$300 (at most 1\%).
-\end{itemize}
+To ensure high-quality supervision, the raw data underwent a rigorous cleaning process. First, 1{,}875 incorrect answers were removed to prevent the student from learning faulty reasoning. Next, 2{,}917 exact duplicate rationales were eliminated to avoid bias. Finally, length outliers exceeding the 99th percentile (approximately 1{,}392 tokens) were discarded, affecting about 300 samples. This process resulted in a final dataset of 24{,}952 cleaned samples, all of which are numerically correct.
 
 \section{Cost analysis}
-\begin{itemize}
-    \item Total teacher generation API cost: \$6.33240.
-    \item Average cost per raw query: \$0.00021 (median \$0.00020; std \$0.000062).
-    \item Cost per retained cleaned sample: \$6.33240 / 24{,}952 $\approx$ \$0.000254.
-    \item Cost for training and evaluation on RunPod: \$18.61.
-\end{itemize}
+The total cost for teacher generation via the API amounted to \$6.33240. The average cost per raw query was \$0.00021, with a median of \$0.00020 and a standard deviation of \$0.000062. When amortized over the retained high-quality data, the cost per cleaned sample was approximately \$0.000254. The computational cost for training and evaluation on the RunPod infrastructure was \$18.61.
+
+This chapter has presented the quantitative findings, demonstrating the accuracy improvements achieved by the SCoTD approach and the training dynamics observed. The following chapter interprets these results, discussing their implications, the impact of dataset filtering, and the limitations of the study.

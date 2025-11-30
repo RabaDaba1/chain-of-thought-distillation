@@ -115,9 +115,9 @@
 		
 		\def\thesistable{
 			\begin{tabular}{p{45mm}l}
-			Author: & {\itshape \@author}\\[-1mm]
-			Degree programme: & {\itshape \@degreeprogramme}\\[-1mm]
-			Supervisor: & {\itshape \@supervisor}\\
+			Autor: & {\itshape \@author}\\[-1mm]
+			Kierunek studiów: & {\itshape \@degreeprogramme}\\[-1mm]
+			Opiekun pracy: & {\itshape \@supervisor}\\
 			\end{tabular}
 		}
 	}%
@@ -174,27 +174,11 @@
 	
 	\clearpage
 	\thispagestyle{empty} 
-	
-	% Strona z podziękowaniami.
-	{~}\vspace{20mm}
-	
-	\clearpage
-	\titlepage
-	
-	\vspace*{15cm} \vfill
-	\begin{flushright} 
-		\begin{minipage}[!h]{10cm}
-			{\Large\itshape \@acknowledgements}
-		\end{minipage}
-	\end{flushright}
-	
-	\clearpage
-	\thispagestyle{empty}
-	
+		
 	~ \newpage
 	
 	% Obecna strona będzie mieć nr 5.
-	\setcounter{page}{5}
+	% \setcounter{page}{5}
 }
 
 
@@ -434,3 +418,13 @@
 	\begin{description}[leftmargin=\eqwheremargin, itemsep=0cm, labelsep=0cm]
 }
 {\end{description}}
+
+% Redefine abstract to avoid resetting page numbering (standard report class abstract uses titlepage environment)
+\renewenvironment{abstract}{%
+    \null\vfil
+    \begin{center}%
+        \bfseries \abstractname
+    \end{center}%
+}{%
+    \par\vfil\null
+}

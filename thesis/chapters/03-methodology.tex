@@ -1,365 +1,91 @@
 \chapter{Methodology}
 
+This chapter details the practical implementation of the research. It outlines the system requirements and architecture, describing the complete pipeline from teacher data generation and cleaning to the specific configurations used for student fine-tuning and evaluation.
+
 \section{System requirements}
+The objective of this system is to facilitate the distillation of reasoning capabilities from a large teacher model to a smaller student model. The following requirements define the necessary functionality and operational constraints to achieve this goal within the specified resource limits.
 
 \subsection{Functional requirements}
-\begin{itemize}
-    \item Generate a sufficiently large, high-quality, correctly answered set of teacher CoT samples for a GSM8K training subset.
-    \item Persist per-sample metadata (latency, token counts, correctness, cost) for analysis.
-    \item Fine-tune a single small student model to emit coherent step-by-step reasoning and a correctly formatted final answer line.
-    \item Fine-tune a single small student model to emit only the correctly formatted final answer line.
-    \item Evaluate all models (base, students, teacher) on the GSM8K test split under strict numeric exact-match parsing of the final answer line.
-\end{itemize}
+The system must provide specific capabilities to support the distillation pipeline. Primarily, it shall generate a dataset of Chain-of-Thought (CoT) reasoning traces for the GSM8K training set using a teacher model. To enable downstream analysis of generation efficiency and quality, the system must persist metadata for each generated sample, including latency, token counts, correctness status, and estimated cost. Furthermore, the system shall support fine-tuning of a student model in two distinct modes: one that learns to generate full reasoning traces (SCoTD) and one that learns to generate only the final answer (Label-only). Finally, the system shall evaluate the performance of base, student, and teacher models on the GSM8K test set using a strict numeric exact-match metric.
 
 \subsection{Non-functional requirements}
-\begin{itemize}
-    \item \textbf{Optimized asynchronous generation}: Highly asynchronous dataset generator with concurrency tuned to balance throughput and timeout/error rate.
-    \item \textbf{Observability}: Persistent logging of token usage, latency distributions, and derived cost metrics during dataset generation.
-    \item \textbf{Data quality}: Diverse and coherent chain-of-thought reasoning. Removal of outliers.
-    \item \textbf{Resource efficiency}: All training and benchmarking runs fit in available VRAM without OOM.
-    \item \textbf{Format compliance}: Final answer line must follow ``Final Answer: <integer>'' exactly. Deviation counts as failure.
-    \item \textbf{Maintainability}: Separation of data generation, cleaning, training, and evaluation stages with clear artifact boundaries.
-    \item \textbf{Reproducibility}: Deterministic training pipeline, versioned artifacts, prompts, configuration, environment and scripts.
-    \item \textbf{Budget adherence}: Monitor spend so teacher generation and GPU usage stay within the stated cap.
-\end{itemize}
+To ensure the system is practical and reliable, several non-functional requirements must be met. The data generation module must operate asynchronously to maximize throughput while handling API rate limits and timeouts effectively. Observability is critical so system must log detailed metrics during generation to allow for real-time monitoring of costs and progress. Resource efficiency is a key constraint, meaning the training and evaluation pipelines must be optimized to run within the memory limits of a single 24GB VRAM GPU. Additionally, reproducibility is essential, requiring that all experiments use fixed random seeds, versioned datasets, and deterministic configuration files.
 
 \subsection{Constraints}
-\begin{itemize}
-    \item Single-GPU environment - no multi-node or distributed training.
-    \item Fixed public benchmark - GSM8K.
-    \item Teacher accessed only via external API.
-    \item Limited sequence context - excessive rationales must be pruned or truncated without losing the final answer line.
-    \item Budget cap at 200\,PLN.
-\end{itemize}
+The project operates under specific constraints that influence design and implementation choices. The primary hardware constraint is the limitation to a single GPU environment, which necessitates the use of parameter-efficient fine-tuning methods like LoRA and quantization. The budget for API usage is capped at 200 PLN, requiring a cost-aware approach to data generation. Additionally, the teacher model is accessed via an external API, introducing latency and potential availability issues. Finally, the context window is limited, meaning excessive rationales must be pruned or truncated without losing the final answer line.
 
 \subsection{Success criteria}
-\begin{itemize}
-    \item Accuracy improvement of the distilled student over the base CoT-prompted model by at least 5 percentage points on GSM8K test.
-    \item Cleaned dataset size sufficient to enable measurable gains (tens of thousands of rationale+answer pairs) without exceeding resource limits.
-    \item All runs complete within available GPU memory and budget envelope.
-\end{itemize}
+The project will be considered successful if the distilled student model achieves an accuracy improvement of at least 5 percentage points over the base CoT-prompted model on the GSM8K test set. Additionally, the cleaned dataset must be of sufficient size (tens of thousands of rationale-answer pairs) to enable measurable gains without exceeding resource limits. All training and benchmarking runs must complete within the available GPU memory and budget envelope.
 
 \subsection{Risks and mitigation}
-\begin{itemize}
-    \item \textbf{Overfitting to limited subset}: Mitigate via data augmentation and training regularization.
-    \item \textbf{Format consistency}: Enforce prompt templates and validation during evaluation.
-    \item \textbf{Data noise leakage}: Strict filtering to remove incorrect teacher answers before student training.
-    \item \textbf{Cost escalation}: Concurrency and request budgeting monitored. Setting account balance limits for GPU usage.
-\end{itemize}
+Several risks have been identified that could impact the success of the project. There is a risk that the student model may overfit to the limited training subset. This is mitigated by generating multiple diverse reasoning paths per question and applying regularization during training. The student model may fail to adhere to the strict output format required for evaluation. This is addressed by using consistent prompt templates and enforcing strict parsing logic. Incorrect reasoning traces from the teacher could degrade student performance. A strict filtering step is implemented to remove any samples where the final answer does not match the ground truth. Uncontrolled API usage could exceed the budget. This is mitigated by monitoring spend and setting account balance limits.
 
 \section{Architecture}
-The system is an offline teacher-to-student pipeline that produces a cleaned CoT dataset and trains a 3B-class student with PEFT, then evaluates under strict numeric exact match.
+The system is designed as a modular pipeline that goes from data generation to model training and evaluation. It is an offline teacher-to-student pipeline that produces a cleaned CoT dataset and trains a 3B-class student with PEFT, followed by evaluation under strict numeric exact match. The high-level structure of this pipeline is depicted in Figure~\ref{fig:pipeline-overview}.
 
-\subsection{Components}
-\begin{itemize}
-    \item \textbf{Teacher generator}: Async OpenRouter client producing structured CoTs.
-    \item \textbf{Prompts/config}: Versioned templates under \texttt{prompts/} with a meta JSON capturing decoding + generation config.
-    \item \textbf{Dataset artifacts}: Raw, cleaned, and processed JSONL stages (introduced once in Data Flow).
-    \item \textbf{Cleaning \& preprocessing}: Notebooks applying correctness filtering, rationale dedup, and length outlier removal.
-    \item \textbf{Training}: Notebook performing QLoRA fine-tuning of two modes (SCoTD and label-only).
-    \item \textbf{Evaluation}: Notebook for greedy exact-match benchmarking.
-    \item \textbf{Runtime}: Single Python environment.
-\end{itemize}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=\linewidth]{img/pipeline.png}
+    \caption{End-to-end SCoTD pipeline.}
+    \label{fig:pipeline-overview}
+\end{figure}
 
-\subsection{Data flow}
-\begin{enumerate}
-    \item \textbf{Ingest}: Load GSM8K train/test splits; select first $\sim$1{,}000 train questions.
-    \item \textbf{Generate}: Oversample $\sim$30 CoTs per question asynchronously and write raw JSONL.
-    \item \textbf{Clean}: Apply correctness filter, rationale dedup, and 99th percentile length trimming and produce cleaned JSONL.
-    \item \textbf{Process}: Project cleaned dataset to minimal supervised learning schema and produce processed JSONL.
-    \item \textbf{Train}: Two modes (SCoTD, label-only).
-    \item \textbf{Evaluate}: Strict numeric exact-match benchmarking.
-\end{enumerate}
+\subsection{Components and data flow}
+The architecture comprises several key components: a Teacher Generator (an async OpenRouter client), data analysis and processing scripts for cleaning and deduplication, a training module utilizing QLoRA, and an evaluation module for benchmarking.
+
+The data flows through the system in a linear sequence. First, the system loads the GSM8K train/test splits and selects the first $\sim$1{,}000 training questions. Then, the Teacher Generator oversamples $\sim$30 CoTs per question asynchronously, writing the results to a raw JSONL file. The raw data undergoes correctness filtering, rationale deduplication, and length trimming to produce a cleaned JSONL dataset. The cleaned dataset is projected to a minimal supervised learning schema. The student model is fine-tuned in two modes (SCoTD and label-only). Finally, the models are benchmarked using strict numeric exact-match evaluation.
 
 \section{Teacher CoT dataset generation}
 This stage produces a cleaned high-quality rationale+answer corpus from a strong reasoning model.
 
-\subsection{Subset selection}
-For cost control only the first $\sim$1{,}000 GSM8K train questions are used. Each question targets 30 samples (oversampling for rationale diversity). Generation is resumable: existing \texttt{(question\_id, sample\_id)} pairs found in the output JSONL are skipped on subsequent runs.
+\subsection{Subset selection and async generation}
+For cost control, only the first $\sim$1{,}000 GSM8K train questions are used. Each question targets 30 samples to ensure rationale diversity. An async Python client (HTTPX) calls the OpenRouter API for the \texttt{deepseek-r1-distill-qwen-32b} model. Concurrency is capped at 25 via a semaphore to balance throughput with rate limits, with a request timeout set to 120 seconds. Each request includes a system prompt specifying the reasoning format and a user prompt with few-shot exemplars.
 
-\subsection{Async generation}
-An async Python client (HTTPX) calls the OpenRouter \texttt{/chat/completions} endpoint for model \texttt{deepseek/deepseek-r1-distill-qwen-32b}. Concurrency is capped at 25 via an \texttt{asyncio.Semaphore}. Each request includes:
-\begin{itemize}
-    \item System prompt: concise reasoning format specification.
-    \item User prompt: templated few-shot exemplars + target question.
-    \item Decoding: \texttt{temperature=1.0}, \texttt{top\_p=1.0}.
-    \item Timeout: 120\,s.
-\end{itemize}
+\subsection{Formatting and correctness}
+The teacher is required to output a structured response containing reasoning steps followed by a final answer line (e.g., "Final Answer: <number>"). The system parses this output to extract the numeric answer. Correctness is determined by a strict numeric equality check against the gold answer from the GSM8K dataset. Any parsing failure or missing final line marks the sample as invalid.
 
-Tenacity applies exponential backoff (max 5 attempts) on transport errors.
-
-\subsection{Formatting contract}
-Required output:
-\begin{verbatim}
-Reasoning:
-- step 1
-- step 2
-...
-Final Answer: <number>
-\end{verbatim}
-No extra trailing text. Final line must start exactly with \texttt{Final Answer:}. Parser scans lines to extract the numeric suffix.
-
-\subsection{Parsing and correctness}
-\begin{itemize}
-    \item Gold answer number: extracted from GSM8K \texttt{answer} field after the \texttt{####} delimiter using a final-number regex.
-    \item Teacher answer number: last numeric token on the \texttt{Final Answer:} line (regex supports integers, decimals, scientific notation).
-    \item Correctness: strict numeric equality (Python int/float comparison). Any parsing failure or missing final line marks the sample invalid (counted as failed).
-\end{itemize}
-
-\subsection{Recording schema}
-Each raw sample appended as a JSONL record with fields:
-\texttt{question\_id, sample\_id, question, gold\_answer\_text, gold\_answer\_number, teacher\_answer\_text, teacher\_answer\_number, is\_correct, finish\_reason, usage\{prompt\_tokens, completion\_tokens\}, latency\_ms, model, request\_id}. Latency is wall-clock from request dispatch to response receipt.
-
-\subsection{Resumability}
-Before generating new samples, existing JSONL is scanned to build a per-question set of occupied \texttt{sample\_id}s. Missing IDs in \([0, N)\) are generated where completed questions are skipped entirely.
-
-\subsection{Progress and metrics}
-A live tqdm progress bar displays:
-\begin{itemize}
-    \item \textbf{cost}: computed continuously as
-    \[
-      \text{cost} = \frac{T_{in}}{10^6} c_{in} + \frac{T_{out}}{10^6} c_{out}
-    \]
-    with $c_{in}=c_{out}=\$0.27$/M tokens (taken from OpenRouter).
-    \item \textbf{tokens\_in / tokens\_out}: cumulative prompt / completion tokens.
-    \item \textbf{acc}: running fraction of \texttt{correct\_samples / total\_samples}.
-    \item \textbf{ok/err}: successful vs failed attempts.
-\end{itemize}
-
-\subsection{Failure handling}
-Failures include HTTP errors, timeouts, parsing errors, or malformed responses. Each increments \texttt{failed\_samples} and no partial record is written. Retries only cover transport exceptions—logical format violations are not retried to avoid cost inflation.
-
-\subsection{Quality outcome}
-Oversampling plus strict filtering yields a pool of diverse, correctly formatted rationales per question (typically multiple distinct reasoning paths). This supports effective downstream distillation while keeping total spend within the budget envelope.
+\subsection{Persistance and progress monitoring}
+Each raw sample is appended to a JSONL file with metadata including the question ID, sample ID, full text, correctness status, token usage, and latency. The process is resumable; existing samples are skipped on subsequent runs. A live progress bar displays real-time metrics such as cost (estimated at \$0.27 per million tokens), cumulative token usage, and running accuracy. Failures (e.g., timeouts, API errors) are tracked but not written to the dataset.
 
 \section{Cleaning}
 This stage removes incorrect, duplicate, and extreme-length samples to yield a high-signal supervision set.
 
-\subsection{Input}
-Raw JSONL: \texttt{artifacts/data/raw/dataset.jsonl} containing 30{,}000 generations (1{,}000 questions $\times$ 30 samples), each with correctness flag, usage tokens, and rationale text.
-
 \subsection{Operations}
-\begin{enumerate}
-    \item \textbf{Load \& index}: Read JSONL into a DataFrame indexed by \texttt{(question\_id, sample\_id)} for deterministic ordering.
-    \item \textbf{Correctness filter}: Keep only rows where \texttt{is\_correct = True}. Removes all teacher numeric mismatches; prevents label noise (primary gain).
-    \item \textbf{Exact rationale dedup}: Drop duplicates on \texttt{teacher\_answer\_text}. Prevents overweighting identical reasoning paths.
-    \item \textbf{Token-length outlier removal}: Compute per-row \texttt{total\_tokens = prompt\_tokens + completion\_tokens}. Remove rows with \texttt{total\_tokens} $\ge$ 99th percentile (threshold 1392 tokens). This trims extreme verbose rationales that inflate sequence length and memory without adding diversity.
-    \item \textbf{Persist}: Reset index and write cleaned JSONL to \texttt{artifacts/data/cleaned/dataset.jsonl}.
-\end{enumerate}
-
-\subsection{Justification}
-\begin{itemize}
-    \item \textbf{Strict correctness}: Ensures the student never trains on wrong final answers (no noisy label memorization).
-    \item \textbf{Deduplication}: Reduces redundant gradient steps; improves effective rationale variety per batch.
-    \item \textbf{Length capping}: Controls worst-case sequence length to avoid GPU OOM and keeps average tokens closer to the median (739 total tokens).
-\end{itemize}
-
-\subsection{Outcome}
-Resulting size: 24{,}952 cleaned samples (from 30k raw). Teacher correctness in retained set is 100\%. Distribution tails (>\,99th percentile) removed while preserving all final answer lines.
+The cleaning process loads the raw JSONL data and applies a series of filters. First, a correctness filter retains only rows where the teacher's answer matches the gold standard, preventing the student from learning incorrect reasoning. Second, exact rationale deduplication removes duplicate reasoning paths to avoid overweighting specific patterns. Finally, token-length outlier removal discards samples exceeding the 99th percentile of length (threshold 1392 tokens) to control memory usage and sequence length. The resulting dataset contains 24{,}952 cleaned samples with 100\% teacher correctness.
 
 \section{Preprocessing}
-Transforms the cleaned corpus into the minimal supervision schema consumed by training scripts.
-
-\subsection{Input}
-Cleaned JSONL: \texttt{artifacts/data/cleaned/dataset.jsonl} (indexed by \texttt{question\_id}, \texttt{sample\_id}).
-
-\subsection{Output}
-Select only: \texttt{question}, \texttt{gold\_answer\_text}, \texttt{gold\_answer\_number}, \texttt{teacher\_answer\_text} \quad (rationale + final answer line), \texttt{teacher\_answer\_number}
-Index columns are preserved until final write, then flattened.
-
-\subsection{Artifact}
-Write to \texttt{artifacts/data/processed/dataset.jsonl}.
-
-\subsection{Schema Rationale}
-Minimal fields reduce I/O and memory footprint, remove unused metadata (latency, token usage) for training, and keep both textual and numeric answers to enable strict evaluation parsing and auxiliary checks.
-
-\subsection{Integrity}
-All records already passed strict correctness; no further validation required. Numeric fields (\texttt{gold\_answer\_number}, \texttt{teacher\_answer\_number}) support exact-match evaluation; textual rationale preserved verbatim for supervised reasoning.
+The preprocessing stage transforms the cleaned corpus into the minimal supervision schema consumed by training scripts. It selects only the necessary fields: question, gold answer text and number, and the teacher's rationale and answer. This minimal schema reduces I/O and memory footprint while preserving all information needed for training and evaluation.
 
 \section{Prompt templates}\label{sec:prompt_templates}
-This section touches on the fixed prompt templates used across generation, training, and benchmarking. Templates are versioned as plain text under \texttt{code/prompts/}. No runtime mutation other than \texttt{\{question\}} placeholder replacement.
+Fixed prompt templates are used across generation, training, and benchmarking to ensure consistency. These templates are versioned as plain text files.
 
-\subsection{Files and roles}
-\begin{itemize}
-    \item \textbf{CoT system} (\texttt{code/prompts/cot/system.txt}): Instructs concise multi-step reasoning (2--8 steps) plus a terminating final answer line.
-    \item \textbf{CoT user} (\texttt{code/prompts/cot/user.txt}): Provides three few-shot exemplars (question, reasoning steps, final answer) followed by the target question placeholder.
-    \item \textbf{Label-only system} (\texttt{code/prompts/label\_only/system.txt}): Constrains output to a single final answer line with no reasoning.
-    \item \textbf{Label-only user} (\texttt{code/prompts/label\_only/user.txt}): Supplies same three few-shot answer-only exemplars plus the target question placeholder.
-\end{itemize}
-
-\subsection{Formatting contracts}
-\begin{itemize}
-    \item \textbf{CoT prompts}: 
-    \begin{verbatim}
-Reasoning:
-- step 1
-- step 2
-...
-Final Answer: <number>
-    \end{verbatim}
-    2--8 dash-prefixed steps; arithmetic shown explicitly; no trailing text after the final answer line.
-    \item \textbf{Label-only prompts}: Single line \texttt{Final Answer: <number>} No units, commentary, or extra lines.
-\end{itemize}
+\subsection{Templates and formatting}
+The \textbf{CoT system prompt} instructs the model to provide concise multi-step reasoning (2--8 steps) followed by a final answer line. The \textbf{CoT user prompt} provides few-shot exemplars demonstrating this format. Similarly, the \textbf{Label-only prompts} constrain the output to a single final answer line without reasoning. The formatting contract requires the final line to start exactly with "Final Answer:" followed by the number, with no trailing text.
 
 \section{Training}
-Goal of training is to fine-tune a single 3B decoder-only model (Qwen/Qwen2.5-3B) with QLoRA under 4-bit NF4 quantization and LoRA adapters, using bfloat16 precision.
+The training process is designed to fine-tune a single 3B decoder-only model (Qwen/Qwen2.5-3B) using QLoRA. This approach enables efficient training on consumer hardware while preserving the reasoning capabilities of the base model.
 
-\subsection{Model, quantization, and PEFT}
-\begin{itemize}
-    \item Base: \texttt{Qwen/Qwen2.5-3B} loaded with BitsAndBytes 4-bit (\texttt{nf4}, double-quantization), compute dtype bf16; \texttt{device\_map="auto"}.
-    \item Gradient checkpointing enabled; \texttt{model.config.use\_cache = false} during training.
-    \item Tokenizer: fast; if \texttt{pad\_token} is missing, set to \texttt{eos\_token} and propagate pad IDs to model and generation config.
-    \item LoRA: \texttt{r=16}, \texttt{alpha=32}, \texttt{dropout=0.05}, \texttt{bias="none"} on \{\texttt{q\_proj}, \texttt{k\_proj}, \texttt{v\_proj}, \texttt{o\_proj}, \texttt{gate\_proj}, \texttt{up\_proj}, \texttt{down\_proj}\}; task type \texttt{CAUSAL\_LM}.
-\end{itemize}
+\subsection{Model configuration and data}
+The base model is loaded with 4-bit NF4 quantization and double quantization to minimize memory usage, while computation is performed in bfloat16 precision. LoRA adapters are attached to all linear projection layers (attention and MLP) with a rank of 16 and alpha of 32. The dataset is split into training (80\%) and validation (20\%) sets using a fixed seed to ensure reproducibility and prevent data leakage.
 
-\subsection{Data split and reproducibility}
-\begin{itemize}
-    \item Input: \texttt{artifacts/data/processed/dataset.jsonl}.
-    \item Split: 80/20 by \texttt{question\_id} (\texttt{TRAIN\_SPLIT=0.8}) with \texttt{seed=42} ensures no question leakage across splits.
-    \item Label-only mode dedup: keep a single record per \texttt{question\_id} (first by \texttt{sample\_id}) to avoid multiple labels per question.
-    \item Seeds for Python, PyTorch, CUDA, and accelerate set to 42; TF32 enabled on matmul/CuDNN.
-\end{itemize}
+\subsection{Training procedure}
+Training utilizes the HuggingFace Trainer with the \texttt{paged\_adamw\_8bit} optimizer. A linear learning rate scheduler is employed with a warmup period. Sequences are constructed by concatenating the prompt and the target answer, with the loss calculated only on the target tokens. The maximum sequence length is set to 2048 tokens. If truncation is necessary, the prompt is trimmed from the left to preserve the full answer.
 
-\subsection{Prompting and target formatting}
-\begin{itemize}
-    \item Prompts: training/inference use the same templates.
-    \begin{itemize}
-        \item SCoTD: \texttt{prompts/cot/system.txt} + \texttt{prompts/cot/user.txt}.
-        \item Label-only: \texttt{prompts/label\_only/system.txt} + \texttt{prompts/label\_only/user.txt}.
-    \end{itemize}
-    \item Targets:
-    \begin{itemize}
-        \item SCoTD: full teacher rationale text including the final line.
-        \item Label-only: a single line "Final Answer: \textless number\textgreater" built from the gold number.
-    \end{itemize}
-\end{itemize}
+Two distinct training modes are executed. The \textbf{SCoTD mode} trains the model to generate the full teacher rationale and final answer, using a learning rate of $2{\times}10^{-5}$ for 10 epochs, a per-device batch size of 8, and 2 gradient accumulation steps. The \textbf{Label-only mode} trains the model to generate only the final answer line, using a learning rate of $1{\times}10^{-5}$ for 20 epochs, a batch size of 16, and 1 accumulation step.
 
-\subsection{Sequence construction and truncation}
-\begin{itemize}
-    \item Max sequence length: 2048.
-    \item Encoding: concatenate prompt IDs with answer IDs; only answer tokens contribute to loss.
-    \item Truncation policy: always preserve the full answer. If needed, trim the prompt from the left so that $\lvert\text{prompt}\rvert + \lvert\text{answer}\rvert \le 2048$.
-    \item Loss mask: labels are \texttt{-100} for all prompt positions and the token IDs of the answer (incl. EOS) for answer positions.
-\end{itemize}
-
-\subsection{Batching and collator}
-\begin{itemize}
-    \item Dynamic padding to the longest in batch; pad to a multiple of 8 for Tensor Cores; attention mask computed as \texttt{input\_ids != pad\_id}.
-    \item \texttt{group\_by\_length=true} to reduce padding waste.
-\end{itemize}
-
-\subsection{Optimization and schedule}
-\begin{itemize}
-    \item Trainer: HuggingFace \texttt{Trainer}.
-    \item Optimizer: \texttt{paged\_adamw\_8bit}.
-    \item Scheduler: linear; \texttt{warmup\_ratio} per mode (below).
-    \item Precision: bf16 if hardware supports it, fp16 otherwise.
-    \item Dataloading: \texttt{num\_workers=4}, \texttt{pin\_memory=true}.
-    \item Checkpointing: \texttt{save\_strategy="steps"}; \texttt{load\_best\_model\_at\_end=true} with \texttt{metric\_for\_best\_model="eval\_loss"} and \texttt{greater\_is\_better=false}.
-    \item Logging: TensorBoard, \texttt{logging\_steps=10}.
-\end{itemize}
-
-\subsection{Mode-specific hyperparameters}
-\noindent SCoTD (rationale+answer):
-\begin{itemize}
-    \item epochs=10, learning rate=$2{\times}10^{-5}$.
-    \item per-device train/eval batch size=8, grad accumulation=2.
-    \item warmup\_ratio=0.03, weight\_decay=0.
-    \item save/eval every 200 steps.
-\end{itemize}
-\noindent Label-only (answer line only):
-\begin{itemize}
-    \item epochs=20, learning rate=$1{\times}10^{-5}$.
-    \item per-device train/eval batch size=16, grad accumulation=1.
-    \item warmup\_ratio=0.1, weight\_decay=0.1, max\_grad\_norm=1.0.
-    \item save/eval every 50 steps.
-\end{itemize}
-
-\subsection{Export and sanity check}
-\begin{itemize}
-    \item After training, reload the frozen 4-bit base and attach the best LoRA checkpoint (\texttt{PeftModel.from\_pretrained}) for inference.
-    \item Deterministic, greedy generation (\texttt{do\_sample=false}) used for quick sanity checks on held-out questions; decoding respects set \texttt{pad\_token\_id} and \texttt{eos\_token\_id}.
-\end{itemize}
+\subsection{Export}
+After training, the best LoRA checkpoint (selected based on validation loss) is merged with the base model for inference. Deterministic greedy decoding is used for sanity checks to ensure the model adheres to the expected output format.
 
 \section{Benchmarking}
-Benchmarking evaluates the base model and all student checkpoints on the GSM8K test split under strict exact-match parsing of the final numeric answer.
+Benchmarking evaluates the base model and all student checkpoints on the GSM8K test split. The primary objective is to measure the exact-match accuracy of the final numeric answer.
 
-\subsection{Objective}
-Measure accuracy ($\#correct \div \#total$) for:
-\begin{itemize}
-    \item Base model with CoT prompting.
-    \item Base model with label-only prompting.
-    \item All SCoTD LoRA checkpoints.
-    \item All label-only LoRA checkpoints.
-\end{itemize}
-All generations use deterministic greedy decoding (no sampling, no self-consistency).
+\subsection{Evaluation pipeline}
+The evaluation process loads the GSM8K test set and extracts the gold numeric answers. For each model (base, SCoTD, label-only), inference is performed using deterministic greedy decoding with a maximum token limit sufficient for long rationales. The models are loaded with the same 4-bit quantization used during training. Inference is batched to optimize throughput, using a batch size of 16 for CoT generation and 128 for label-only generation.
 
-\subsection{Dataset and gold answers}
-The GSM8K test split is loaded via \texttt{load\_dataset(GSM8K\_PATH, name="main", split="test")}. Gold numeric answers are extracted from the original \texttt{answer} field using \texttt{parse\_gold\_answer\_number}, which regex-parses the final integer after ''\#\#\#\#'' delimiter.
-
-\subsection{Prompt construction}
-Two builders create inference prompts:
-\begin{itemize}
-    \item \texttt{build\_prompt\_cot}: concatenates the CoT system template and user template with the target question; expects rationale steps then a final line.
-    \item \texttt{build\_prompt\_label\_only}: analogous, but the system template instructs answer-only output.
-\end{itemize}
-Both yield a single plain-text prompt string; any truncation (left side) preserves the answer region.
-
-\subsection{Model loading and quantization}
-Each run loads either the base model (\texttt{Qwen/Qwen2.5-3B}) or a LoRA checkpoint path. All models use 4-bit NF4 quantization (\texttt{BitsAndBytesConfig} with double quantization) and bf16 compute. \texttt{device\_map="auto"}. \texttt{model.config.use\_cache = True} activates KV caching for faster greedy decoding.
-
-\subsection{Tokenizer settings}
-Tokenizer is fast, left-padding and left-truncating. Pad token ID is propagated to \texttt{generation\_config}. Batches are tokenized with dynamic padding; no special postprocessing beyond stripping decoded prompt prefixes from responses.
-
-\subsection{Generation configuration}
-\begin{itemize}
-    \item Greedy: \texttt{do\_sample=False}.
-    \item \texttt{max\_new\_tokens=1024} to allow long rationales.
-    \item Cache usage: \texttt{use\_cache=True}.
-    \item Precision aids: TF32 enabled on matmul/CuDNN for potential minor throughput gains.
-\end{itemize}
-
-\subsection{Batching}
-Batch size reflects output length expectations:
-\begin{itemize}
-    \item Label-only: 128 (short single-line answers).
-    \item CoT: 16 (long multi-step rationales).
-\end{itemize}
-Processing iterates over slices of question lists; each batch calls \texttt{model.generate} once.
-
-\subsection{Parsing and strict evaluation}
-Predicted texts are trimmed by removing the prompt prefix and then parsed with \texttt{parse\_teacher\_final\_answer}, which searches for a final line starting with ``Final Answer:'' and extracts the trailing numeric token. Failures (missing line, malformed number, regex miss) raise \texttt{ParsingError}, such cases count as incorrect. This strictness penalizes:
-\begin{itemize}
-    \item Format deviations (e.g., extra commentary after the answer line).
-    \item Missing prefix ``Final Answer:''.
-    \item Multiple numeric candidates (the parser only accepts the final numeric token on that line).
-\end{itemize}
-Accuracy is the fraction of predictions whose parsed number equals the gold number (exact equality). No normalization (e.g., stripping commas or units) is applied.
-
-\subsection{Checkpoint iteration and resource cleanup}
-A \texttt{RUNS} list enumerates all label-only checkpoints (sorted by numeric suffix), all SCoTD checkpoints, then the two base-mode baselines. After each run:
-\begin{itemize}
-    \item Metrics (accuracy, count) are appended to a results list.
-    \item Predictions DataFrame rows receive the model name.
-    \item \texttt{cleanup\_model} deletes model/tokenizer objects, triggers garbage collection, empties CUDA cache, and synchronizes to reduce fragmentation before loading the next checkpoint.
-\end{itemize}
-This prevents cumulative GPU memory growth across many sequential loads.
-
-\subsection{Artifacts}
-All per-question predictions across runs are concatenated and written to \texttt{predictions.csv} with columns: \texttt{model} (run identifier), \texttt{question}, \texttt{prediction} (raw decoded answer text), \texttt{gold\_answer} (numeric gold).
+\subsection{Scoring}
+The generated outputs are parsed to extract the final answer using strict rules. The parser searches for the "Final Answer:" line and extracts the last numeric token. Any deviation from this format, including missing lines or malformed numbers, results in a parsing error and is counted as an incorrect answer. Accuracy is calculated as the fraction of predictions where the parsed number exactly matches the gold number.
 
 \section{Environment setup}
-Fine-tuning and benchmarking runs were executed on RunPod node with the following specs:
+The experiments were conducted on a single RunPod instance equipped with an NVIDIA RTX 4090 GPU (24GB VRAM) and 64GB of system RAM. The software environment was based on Python 3.11, utilizing PyTorch 2.8.0 and CUDA 12.9. The \texttt{uv} package manager was used for dependency management, and the environment was configured to disable tokenizer parallelism to avoid deadlocks.
 
-\subsection{Hardware}
-\begin{itemize}
-    \item Single GPU: RunPod RTX 4090 (24GB VRAM), RAM 64GB.
-    \item Pod cost: \$0.34/hour.
-\end{itemize}
-
-\subsection{Software}
-\begin{itemize}
-    \item Python 3.11; package manager: \texttt{uv}.
-    \item CUDA 12.9; PyTorch 2.8.0.
-    \item Env: \texttt{TOKENIZERS\_PARALLELISM=false}.
-\end{itemize}
+In summary, this chapter has defined the experimental setup, including the data processing pipeline, training configurations, and evaluation metrics. The next chapter presents the empirical results obtained from this system, quantifying the performance of the distilled models compared to the baselines.

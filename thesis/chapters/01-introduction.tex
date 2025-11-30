@@ -8,6 +8,8 @@ This thesis studies symbolic chain-of-thought distillation (SCoTD): a strong tea
 Small models are attractive due to their lower latency, footprint, and cost, but they struggle with multi-step math reasoning under greedy decoding. CoT distillation transfers the teacher's intermediate reasoning patterns, potentially improving student accuracy without increasing inference-time cost. The practical question is whether a 3B-class model can benefit sufficiently from SCoTD to close part of the gap to teacher performance on GSM8K.
 
 \section*{Research questions}
+To systematically evaluate the effectiveness of the proposed distillation method and understand its impact relative to baselines, this study addresses the following specific research questions:
+
 \begin{itemize}
     \item RQ1: Does SCoTD improve a 3B-class model on GSM8K compared to the non-finetuned base under CoT prompting?
     \item RQ2: How does label-only supervised finetuning compare to SCoTD and base baselines under strict numeric exact-match evaluation?
@@ -17,6 +19,8 @@ Small models are attractive due to their lower latency, footprint, and cost, but
 The study focuses on a single small decoder-only model (\texttt{Qwen/Qwen2.5-3B}) \cite{qwen2025qwen25technicalreport} and a single dataset (GSM8K) \cite{cobbe2021trainingverifierssolvemath}. Teacher (DeepSeek-R1 Distill \cite{deepseekai2025deepseekr1incentivizingreasoningcapability}) CoTs are produced via an API-accessible, strong reasoning model configured to emit structured steps and a single-line final answer. The student is trained with LoRA on 4-bit quantized base weights using bfloat16 precision, gradient checkpointing, and standard optimizers. Evaluation uses greedy decoding with strict numeric parsing; outputs that deviate from the expected format are counted as incorrect.
 
 \section*{Contributions}
+This thesis makes several practical and empirical contributions to the field of efficient language model reasoning. Specifically, the work delivers:
+
 \begin{itemize}
     \item A practical, cost-aware pipeline for generating and cleaning teacher CoTs for GSM8K, with concurrency-tuned API calls and per-sample metadata for analysis.
     \item A reproducible PEFT training setup (LoRA + 4-bit nf4 + bfloat16) fitting on a single 24\,GB GPU while targeting attention and MLP projection modules.
@@ -26,13 +30,6 @@ The study focuses on a single small decoder-only model (\texttt{Qwen/Qwen2.5-3B}
 
 \section*{Method overview}
 The pipeline comprises teacher CoT generation, cleaning and deduplication, dataset processing, student finetuning (SCoTD and label-only variants), and evaluation. The student relies on PEFT with LoRA adapters \cite{hu2021loralowrankadaptationlarge} over a quantized backbone \cite{dettmers2023qloraefficientfinetuningquantized}. Tokenization is handled with a fast subword tokenizer \cite{kudo2018sentencepiecesimplelanguageindependent,sennrich2016neuralmachinetranslationrare}. Inference uses greedy decoding and a strict numeric exact-match metric. The software stack builds on Transformers and related tooling \cite{wolf2020huggingfacestransformersstateoftheartnatural}. The teacher is a strong reasoning model accessed via OpenRouter \cite{openrouter}.
-
-\begin{figure}[!h]
-    \centering
-    \includegraphics[width=\linewidth]{img/pipeline.png}
-    \caption{End-to-end SCoTD pipeline.}
-    \label{fig:pipeline-overview}
-\end{figure}
 
 \section*{Results summary}
 SCoTD yields a clear gain over the base model under CoT prompting (78.54\% vs 70.51\%). Label-only fine-tuning improves over its baseline (15.01\% vs 10.99\%), though strict formatting likely undercounts correct numeric computations. The teacher achieves 93.61\% on GSM8K test, providing headroom and confirming the value of distilling high-quality reasoning traces.
