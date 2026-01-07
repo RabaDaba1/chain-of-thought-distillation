@@ -48,19 +48,55 @@ The teacher is required to output a structured response containing reasoning ste
 Each raw sample is appended to a JSONL file with metadata including the question ID, sample ID, full text, correctness status, token usage, and latency. The process is resumable; existing samples are skipped on subsequent runs. A live progress bar displays real-time metrics such as cost (estimated at \$0.27 per million tokens), cumulative token usage, and running accuracy. Failures (e.g., timeouts, API errors) are tracked but not written to the dataset.
 
 \section{Cleaning}
-This stage removes incorrect, duplicate, and extreme-length samples to yield a high-signal supervision set.
-
-\subsection{Operations}
-The cleaning process loads the raw JSONL data and applies a series of filters. First, a correctness filter retains only rows where the teacher's answer matches the gold standard, preventing the student from learning incorrect reasoning. Second, exact rationale deduplication removes duplicate reasoning paths to avoid overweighting specific patterns. Finally, token-length outlier removal discards samples exceeding the 99th percentile of length (threshold 1392 tokens) to control memory usage and sequence length. The resulting dataset contains 24{,}952 cleaned samples with 100\% teacher correctness.
+This stage removes incorrect, duplicate, and extreme-length samples to yield a high-signal supervision set. The cleaning process loads the raw JSONL data and applies a series of filters. First, a correctness filter retains only rows where the teacher's answer matches the gold standard, preventing the student from learning incorrect reasoning. Second, exact rationale deduplication removes duplicate reasoning paths to avoid overweighting specific patterns. Finally, token-length outlier removal discards samples exceeding the 99th percentile of length (threshold 1392 tokens) to control memory usage and sequence length. The resulting dataset contains 24{,}952 cleaned samples with 100\% teacher correctness.
 
 \section{Preprocessing}
 The preprocessing stage transforms the cleaned corpus into the minimal supervision schema consumed by training scripts. It selects only the necessary fields: question, gold answer text and number, and the teacher's rationale and answer. This minimal schema reduces I/O and memory footprint while preserving all information needed for training and evaluation.
 
 \section{Prompt templates}\label{sec:prompt_templates}
-Fixed prompt templates are used across generation, training, and benchmarking to ensure consistency. These templates are versioned as plain text files.
+Fixed prompt templates are used across generation, training, and benchmarking to ensure consistency. These templates are versioned as plain text files. The \textbf{CoT system prompt} instructs the model to provide concise multi-step reasoning followed by a final answer line:
 
-\subsection{Templates and formatting}
-The \textbf{CoT system prompt} instructs the model to provide concise multi-step reasoning (2--8 steps) followed by a final answer line. The \textbf{CoT user prompt} provides few-shot exemplars demonstrating this format. Similarly, the \textbf{Label-only prompts} constrain the output to a single final answer line without reasoning. The formatting contract requires the final line to start exactly with "Final Answer:" followed by the number, with no trailing text.
+\begin{verbatim}
+You are a rigorous yet concise math solver. Solve problem 
+with a brief and correct chain-of-thought followed by a 
+single final answer line.
+
+Output format (strict):
+Reasoning:
+- step 1
+- step 2
+- step 3
+[up to 8 short steps total]
+Final Answer: <number>
+
+Rules:
+- 2-8 short reasoning steps.
+- Do not restate the question or add commentary.
+- Show essential arithmetic explicitly (e.g., 3x7=21).
+- No extra sections, no citations.
+- Final line must be exactly: Final Answer: <number>
+- Stop after the final answer line.
+\end{verbatim}
+
+The \textbf{CoT user prompt} provides few-shot exemplars demonstrating this format with example problems and their step-by-step solutions. Similarly, the \textbf{Label-only system prompt} constrains the output to a single final answer line without reasoning:
+
+\begin{verbatim}
+You are a rigorous and precise math solver. Output the 
+correct solution as a single final answer line: 
+"Final Answer: <number>"
+
+Output format (strict):
+Final Answer: <number>
+
+Rules:
+- Do not restate the question or add commentary or reasoning.
+- No extra sections, no citations.
+- Output must be exactly one line: Final Answer: <number>
+- Do not add units to the final number.
+- Stop immediately after the answer line.
+\end{verbatim}
+
+The formatting contract requires the final line to start exactly with ``Final Answer:'' followed by the number, with no trailing text.
 
 \section{Training}
 The training process is designed to fine-tune a single 3B decoder-only model (Qwen/Qwen2.5-3B) using QLoRA. This approach enables efficient training on consumer hardware while preserving the reasoning capabilities of the base model.

@@ -1,9 +1,6 @@
 \chapter{Conclusion}
 
-This chapter summarizes the research conducted in this thesis. It revisits the initial research questions, synthesizes the key conclusions drawn from the experiments, and outlines the contributions made to the field of efficient language model reasoning, followed by recommendations for future work.
-
-\section{Summary and conclusions}
-The thesis investigated whether symbolic chain-of-thought distillation (SCoTD) can improve a 3B-class small language model’s math reasoning accuracy on GSM8K under strict greedy evaluation. It further compared rationale+answer supervision to answer-only (label-only) fine-tuning within a constrained single-GPU environment.
+The thesis investigated whether symbolic chain-of-thought distillation (SCoTD) can improve a 3B-class small language model's math reasoning accuracy on GSM8K under strict greedy evaluation. It further compared rationale+answer supervision to answer-only (label-only) fine-tuning within a constrained single-GPU environment.
 
 To address the specific research questions posed at the beginning of this thesis, the experimental results provide clear answers. Regarding \textbf{RQ1}, SCoTD improved the student from 70.51\% (base with CoT prompting) to 78.54\% (+8.03 points). Thus, supervised rationale transfer is effective for multi-step arithmetic in a 3B model under resource constraints. Regarding \textbf{RQ2}, label-only fine-tuning improved from 10.99\% to 15.01\% (+4.02 points) but remained far below SCoTD. This demonstrates that intermediate supervision is substantially more informative than final-answer-only supervision for this task and evaluation method.
 

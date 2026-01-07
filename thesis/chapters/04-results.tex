@@ -32,6 +32,8 @@ The training process involved saving model checkpoints at regular intervals to m
 In contrast, the Label-only model was saved more frequently, every 50 steps, due to its faster convergence. The best accuracy was recorded early at step 200 (15.01\%). Subsequent checkpoints showed a degradation or plateau in performance, which correlated with a rising validation loss after an early minimum.
 
 \section{Training}
+This section presents the training dynamics of both models, examining the evolution of loss functions and optimization metrics throughout the training process. The label-only and SCoTD models exhibit distinct behaviors that reflect the nature of their respective supervision signals.
+
 \subsection{Label-only model}
 \begin{figure}[!h]
     \centering
@@ -107,7 +109,7 @@ The training dynamics of the label-only model are characterized by rapid optimiz
 The SCoTD model exhibits more stable optimization behavior. Figure \ref{fig:sctod-dynamics}b shows an absence of large gradient spikes, likely due to the longer sequences distributing updates more evenly. Unlike the label-only model, the evaluation loss for SCoTD continues to improve past the point of best accuracy (Figure \ref{fig:sctod-losses}b). This implies that accuracy saturation occurs before the token-level optimum is reached. The gradient norms remain within a constrained range, suggesting consistent convergence and indicating that the diversity of rationales did not destabilize the training process.
 
 \subsection{Comparison}
-Comparing the two approaches reveals distinct behaviors. The label-only model achieves faster early loss reduction but suffers from an earlier generalization peak and subsequent overfitting. In contrast, SCoTD demonstrates sustained improvement in evaluation loss, where the accuracy plateau likely reflects a reasoning ceiling rather than overfitting. Furthermore, the gradient behavior differs significantly. The high initial norms of the label-only model contrast with the moderate, steady norms of SCoTD, indicating incremental adaptation when learning longer rationales.
+The two training approaches exhibit distinct behaviors that reflect their underlying supervision signals. The label-only model achieves faster early loss reduction but suffers from an earlier generalization peak and subsequent overfitting, consistent with its short target sequences and limited supervision richness. In contrast, SCoTD demonstrates sustained improvement in evaluation loss throughout training, where the accuracy plateau likely reflects a reasoning ceiling rather than overfitting. The gradient behavior also differs significantly: the high initial norms of the label-only model contrast with the moderate, steady norms of SCoTD, indicating incremental adaptation when learning longer rationales. These observations suggest that rationale supervision provides a more stable optimization.
 
 \section{Output length and latency distributions}
 The distribution of reasoning steps and generation latencies is shown in Figure~\ref{fig:steps-latency}.
@@ -132,7 +134,7 @@ Figure~\ref{fig:cost-length} illustrates the per-query cost distribution and the
 
 Analysis of the reasoning step counts shows that 90\% of the generated samples fall within the range of 4 to 7 steps. Interestingly, incorrect samples are slightly over-represented in the 4--5 step range, suggesting that shorter reasoning chains may correlate with lower accuracy. Regarding latency, the interquartile range spans from approximately 4.3 seconds to 7.1 seconds, with a heavy tail that aligns with the longest completions.
 
-The cost distribution approximates a log-normal shape, with a long tail extending beyond \$0.00030 that consists mainly of verbose rationales. In terms of length, the median character count is around 150, while the median token count is 225. Incorrect answers tend to be mildly shorter, which may indicate information insufficiency in those responses.
+The cost distribution approximates a log-normal shape, with a long tail extending beyond \$0.00030 that consists mainly of verbose rationales. In terms of length, the median character count is around 150 and the median token count is 225. Incorrect answers tend to be mildly shorter, which may indicate information insufficiency in those responses.
 
 \section{Dataset filtering outcomes}
 The data generation phase produced a total of 30{,}000 raw samples, derived from 1{,}000 training questions each queried 30 times. The teacher model demonstrated a high level of numeric correctness on this raw set, achieving 93.75\% (28{,}125 correct samples).
@@ -140,6 +142,6 @@ The data generation phase produced a total of 30{,}000 raw samples, derived from
 To ensure high-quality supervision, the raw data underwent a rigorous cleaning process. First, 1{,}875 incorrect answers were removed to prevent the student from learning faulty reasoning. Next, 2{,}917 exact duplicate rationales were eliminated to avoid bias. Finally, length outliers exceeding the 99th percentile (approximately 1{,}392 tokens) were discarded, affecting about 300 samples. This process resulted in a final dataset of 24{,}952 cleaned samples, all of which are numerically correct.
 
 \section{Cost analysis}
-The total cost for teacher generation via the API amounted to \$6.33240. The average cost per raw query was \$0.00021, with a median of \$0.00020 and a standard deviation of \$0.000062. When amortized over the retained high-quality data, the cost per cleaned sample was approximately \$0.000254. The computational cost for training and evaluation on the RunPod infrastructure was \$18.61.
+The total cost for teacher generation via the API amounted to \$6.33. The average cost per raw query was \$0.00021, with a median of \$0.00020 and a standard deviation of \$0.000062. When amortized over the retained high-quality data, the cost per cleaned sample was approximately \$0.000254. The computational cost for training and evaluation on the RunPod infrastructure was \$18.61.
 
 This chapter has presented the quantitative findings, demonstrating the accuracy improvements achieved by the SCoTD approach and the training dynamics observed. The following chapter interprets these results, discussing their implications, the impact of dataset filtering, and the limitations of the study.

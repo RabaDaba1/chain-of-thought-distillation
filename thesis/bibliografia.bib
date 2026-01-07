@@ -31,14 +31,12 @@
     url={https://arxiv.org/abs/2203.11171}, 
 }
 
-@article{hu2021loralowrankadaptationlarge,
-    title={Lora: Low-rank adaptation of large language models.},
-    author={Hu, Edward J and Shen, Yelong and Wallis, Phillip and Allen-Zhu, Zeyuan and Li, Yuanzhi and Wang, Shean and Wang, Lu and Chen, Weizhu and others},
-    journal={ICLR},
-    volume={1},
-    number={2},
-    pages={3},
-    year={2022}
+@inproceedings{hu2021loralowrankadaptationlarge,
+    title={LoRA: Low-Rank Adaptation of Large Language Models},
+    author={Hu, Edward J and Shen, Yelong and Wallis, Phillip and Allen-Zhu, Zeyuan and Li, Yuanzhi and Wang, Shean and Wang, Lu and Chen, Weizhu},
+    booktitle={International Conference on Learning Representations},
+    year={2022},
+    url={https://openreview.net/forum?id=nZeVKeeFYf9}
 }
 
 @inproceedings{dettmers2023qloraefficientfinetuningquantized,
@@ -74,14 +72,21 @@
     url={https://arxiv.org/abs/1910.03771}, 
 }
 
-@misc{kudo2018sentencepiecesimplelanguageindependent,
-    title={SentencePiece: A simple and language independent subword tokenizer and detokenizer for Neural Text Processing}, 
-    author={Taku Kudo and John Richardson},
-    year={2018},
-    eprint={1808.06226},
-    archivePrefix={arXiv},
-    primaryClass={cs.CL},
-    url={https://arxiv.org/abs/1808.06226}, 
+@inproceedings{kudo2018sentencepiecesimplelanguageindependent,
+    title = "{S}entence{P}iece: A simple and language independent subword tokenizer and detokenizer for Neural Text Processing",
+    author = "Kudo, Taku  and
+      Richardson, John",
+    editor = "Blanco, Eduardo  and
+      Lu, Wei",
+    booktitle = "Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing: System Demonstrations",
+    month = nov,
+    year = "2018",
+    address = "Brussels, Belgium",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/D18-2012/",
+    doi = "10.18653/v1/D18-2012",
+    pages = "66--71",
+    abstract = "This paper describes SentencePiece, a language-independent subword tokenizer and detokenizer designed for Neural-based text processing, including Neural Machine Translation. It provides open-source C++ and Python implementations for subword units. While existing subword segmentation tools assume that the input is pre-tokenized into word sequences, SentencePiece can train subword models directly from raw sentences, which allows us to make a purely end-to-end and language independent system. We perform a validation experiment of NMT on English-Japanese machine translation, and find that it is possible to achieve comparable accuracy to direct subword training from raw sentences. We also compare the performance of subword training and segmentation with various configurations. SentencePiece is available under the Apache 2 license at \url{https://github.com/google/sentencepiece}."
 }
 
 @inproceedings{sennrich2016neuralmachinetranslationrare,
@@ -174,7 +179,7 @@
     author={OpenRouter},
     howpublished={\url{https://openrouter.ai}},
     year={2023},
-    note={Accessed 2025}
+    note={Accessed: 2025-09-14}
 }
 
 @misc{runpod,
@@ -182,7 +187,7 @@
     author={RunPod},
     howpublished={\url{https://www.runpod.io}},
     year={2022},
-    note={Accessed 2025}
+    note={Accessed: 2025-09-14}
 }
 
 @software{The_pandas_development_team_pandas-dev_pandas_Pandas,
@@ -230,11 +235,13 @@
     title={uv: An extremely fast Python package and project manager, written in Rust.},
     author={Astral},
     howpublished={\url{https://github.com/astral-sh/uv}},
+    note={Accessed: 2025-09-14}
 }
 
 @misc{tqdm,
     title={tqdm: A Fast, Extensible Progress Bar for Python and CLI},
     howpublished={\url{https://github.com/tqdm/tqdm}},
+    note={Accessed: 2025-09-14}
 }
 
 @misc{deepseekai2025deepseekr1incentivizingreasoningcapability,
@@ -357,14 +364,16 @@
     year={2016}
 }
 
-@misc{gou2021survey,
+@article{gou2021knowledge,
     title={Knowledge Distillation: A Survey},
-    author={Jianping Gou and Baosheng Yu and Stephen J. Maybank and Dacheng Tao},
+    author={Gou, Jianping and Yu, Baosheng and Maybank, Stephen J and Tao, Dacheng},
+    journal={International Journal of Computer Vision},
+    volume={129},
+    number={6},
+    pages={1789--1819},
     year={2021},
-    eprint={2006.05525},
-    archivePrefix={arXiv},
-    primaryClass={cs.LG},
-    url={https://arxiv.org/abs/2006.05525},
+    publisher={Springer},
+    doi={10.1007/s11263-021-01453-z}
 }
 
 @InProceedings{houlsby2019parameter,
@@ -383,24 +392,37 @@
     abstract = 	 {Fine-tuning large pretrained models is an effective transfer mechanism in NLP. However, in the presence of many downstream tasks, fine-tuning is parameter inefficient: an entire new model is required for every task. As an alternative, we propose transfer with adapter modules. Adapter modules yield a compact and extensible model; they add only a few trainable parameters per task, and new tasks can be added without revisiting previous ones. The parameters of the original network remain fixed, yielding a high degree of parameter sharing. To demonstrate adapter’s effectiveness, we transfer the recently proposed BERT Transformer model to $26$ diverse text classification tasks, including the GLUE benchmark. Adapters attain near state-of-the-art performance, whilst adding only a few parameters per task. On GLUE, we attain within $0.8\%$ of the performance of full fine-tuning, adding only $3.6\%$ parameters per task. By contrast, fine-tuning trains $100\%$ of the parameters per task.}
 }
 
-@misc{li2021prefixtuning,
-      title={Prefix-Tuning: Optimizing Continuous Prompts for Generation}, 
-      author={Xiang Lisa Li and Percy Liang},
-      year={2021},
-      eprint={2101.00190},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2101.00190}, 
+@inproceedings{li2021prefixtuning,
+    title={Prefix-Tuning: Optimizing Continuous Prompts for Generation},
+    author={Li, Xiang Lisa and Liang, Percy},
+    booktitle={Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing (Volume 1: Long Papers)},
+    month={aug},
+    year={2021},
+    address={Online},
+    publisher={Association for Computational Linguistics},
+    url={https://aclanthology.org/2021.acl-long.353/},
+    doi={10.18653/v1/2021.acl-long.353},
+    pages={4582--4597}
 }
 
-@misc{lester2021power,
-      title={The Power of Scale for Parameter-Efficient Prompt Tuning}, 
-      author={Brian Lester and Rami Al-Rfou and Noah Constant},
-      year={2021},
-      eprint={2104.08691},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2104.08691}, 
+@inproceedings{lester2021power,
+    title = "The Power of Scale for Parameter-Efficient Prompt Tuning",
+    author = "Lester, Brian  and
+      Al-Rfou, Rami  and
+      Constant, Noah",
+    editor = "Moens, Marie-Francine  and
+      Huang, Xuanjing  and
+      Specia, Lucia  and
+      Yih, Scott Wen-tau",
+    booktitle = "Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing",
+    month = nov,
+    year = "2021",
+    address = "Online and Punta Cana, Dominican Republic",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2021.emnlp-main.243/",
+    doi = "10.18653/v1/2021.emnlp-main.243",
+    pages = "3045--3059",
+    abstract = "In this work, we explore ``prompt tuning,'' a simple yet effective mechanism for learning ``soft prompts'' to condition frozen language models to perform specific downstream tasks. Unlike the discrete text prompts used by GPT-3, soft prompts are learned through backpropagation and can be tuned to incorporate signals from any number of labeled examples. Our end-to-end learned approach outperforms GPT-3{'}s few-shot learning by a large margin. More remarkably, through ablations on model size using T5, we show that prompt tuning becomes more competitive with scale: as models exceed billions of parameters, our method ``closes the gap'' and matches the strong performance of model tuning (where all model weights are tuned). This finding is especially relevant because large models are costly to share and serve and the ability to reuse one frozen model for multiple downstream tasks can ease this burden. Our method can be seen as a simplification of the recently proposed ``prefix tuning'' of Li and Liang (2021) and we provide a comparison to this and other similar approaches. Finally, we show that conditioning a frozen model with soft prompts confers benefits in robustness to domain transfer and enables efficient ``prompt ensembling.'' We release code and model checkpoints to reproduce our experiments."
 }
 
 @online{nvidia2024qlora,
