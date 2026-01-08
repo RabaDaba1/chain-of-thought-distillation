@@ -36,6 +36,8 @@
     Results show that SCoTD improves the student over a non-finetuned base with CoT prompting (78.54\% vs 70.51\%). A label-only variant also improves over its baseline (15.01\% vs 10.99\%), though strict formatting requirements likely undercount true ability. The teacher reaches 93.61\% on the GSM8K test split. Contributions include a cost-aware CoT data generation pipeline, a reproducible finetuning setup (LoRA + 4-bit nf4 + bf16), and an empirical analysis of accuracy, training dynamics, and operational costs. These findings support SCoTD as a practical method to enhance small models' reasoning under resource constraints.
     \end{abstract}
 
+    \noindent\textbf{Keywords:} LLM, chain-of-thought, distillation, LoRA, QLoRA, GSM8K, reasoning, quantization
+
     \clearpage
 
     \begin{otherlanguage}{polish}
@@ -45,9 +47,9 @@
 
     Wyniki pokazują, że SCoTD poprawia wyniki ucznia w porównaniu do modelu bazowego bez dostrajania z promptowaniem CoT (78,54\% vs 70,51\%). Wariant uczony tylko na etykietach również poprawia wyniki względem swojego poziomu odniesienia (15,01\% vs 10,99\%), chociaż rygorystyczne wymagania formatowania prawdopodobnie zaniżają rzeczywistą zdolność. Nauczyciel osiąga 93,61\% na zbiorze testowym GSM8K. Wkład pracy obejmuje potok generowania danych CoT uwzględniający koszty, powtarzalną konfigurację dostrajania (LoRA + 4-bit nf4 + bf16) oraz empiryczną analizę dokładności, dynamiki uczenia i kosztów operacyjnych. Wyniki te wspierają SCoTD jako praktyczną metodę ulepszania rozumowania małych modeli przy ograniczonych zasobach.
     \end{abstract}
-    \end{otherlanguage}
 
-    \noindent\textbf{Keywords:} LLM, chain-of-thought, distillation, LoRA, QLoRA, GSM8K, reasoning, quantization
+    \noindent\textbf{Słowa kluczowe:} LLM, łańcuch myśli, destylacja, LoRA, QLoRA, GSM8K, rozumowanie, kwantyzacja
+    \end{otherlanguage}
 	
 	\clearpage
 
@@ -62,6 +64,7 @@
 	\include{chapters/04-results}
 	\include{chapters/05-discussion}
 	\include{chapters/06-conclusion}
+
 	% itd.
 	% \appendix
 	% \include{dodatekA}

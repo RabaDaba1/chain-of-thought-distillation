@@ -124,4 +124,7 @@ The generated outputs are parsed to extract the final answer using strict rules.
 \section{Environment setup}
 The experiments were conducted on a single RunPod instance equipped with an NVIDIA RTX 4090 GPU (24GB VRAM) and 64GB of system RAM. The software environment was based on Python 3.11, utilizing PyTorch 2.8.0 and CUDA 12.9. The \texttt{uv} package manager was used for dependency management, and the environment was configured to disable tokenizer parallelism to avoid deadlocks.
 
+\section{Source code organization}
+The source code of the implementation, including data generation, dataset cleaning, training, and evaluation scripts, can be found at: \url{https://github.com/RabaDaba1/chain-of-thought-distillation}.
+
 In summary, this chapter has defined the experimental setup, including the data processing pipeline, training configurations, and evaluation metrics. The next chapter presents the empirical results obtained from this system, quantifying the performance of the distilled models compared to the baselines.

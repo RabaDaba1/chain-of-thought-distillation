@@ -177,8 +177,8 @@
 		
 	~ \newpage
 	
-	% Obecna strona będzie mieć nr 5.
-	% \setcounter{page}{5}
+	% Obecna strona będzie mieć nr 3 (po tytułowej i pustej).
+	\setcounter{page}{3}
 }
 
 
